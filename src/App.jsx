@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// ── SUPABASE ──────────────────────────────────────────────────────────────────
+// ── CONEXIÓN A SUPABASE ───────────────────────────────────────────────────────
 const SUPABASE_URL = "https://vpachxutgcwtdikdatrf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_TS6cGjRNS5fm1q5S1zgE5g_jxGdIfqP";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const MOVEMENTS = [
+// ── CONSTANTES GLOBALES ───────────────────────────────────────────────────────
+const MOVIMIENTOS = [
   "Back Squat",
   "Deadlift",
   "Clean & Jerk",
@@ -15,13 +15,14 @@ const MOVEMENTS = [
   "Press",
   "Bench Press",
 ];
-const PCTS = [50, 60, 70, 75, 80, 85, 90, 95, 100];
-const Y = "#F5C400";
-const BG = "#0a0a0a";
-const CARD = "#111111";
-const BORDER = "#1e1e1e";
+const PORCENTAJES = [50, 60, 70, 75, 80, 85, 90, 95, 100];
+const DISCIPLINAS = ["Crossfit", "Funcional", "Adultos Mayores", "Niños"];
+const Y = "#F5C400"; // amarillo Ragnar
+const BG = "#0a0a0a"; // fondo negro
+const CARD = "#111111"; // fondo tarjeta
+const BORDER = "#1e1e1e"; // borde sutil
 
-// ── GROUP SELECTOR ────────────────────────────────────────────────────────────
+// ── HORARIOS Y FRECUENCIAS DISPONIBLES ───────────────────────────────────────
 const HORARIOS = ["7AM", "8AM", "10AM", "6PM", "8PM"];
 const FRECUENCIAS = [
   "2x semana",
@@ -31,16 +32,20 @@ const FRECUENCIAS = [
   "6x semana",
 ];
 
-const GroupSelector = ({ groups, onSelect, onCancel }) => {
+// ── COMPONENTE: SELECTOR DE GRUPO (horario + frecuencia) ─────────────────────
+const SelectorGrupo = ({ grupos, onSeleccionar, onCancelar }) => {
   const [horario, setHorario] = useState("");
   const [frecuencia, setFrecuencia] = useState("");
 
-  const sel = groups.find((g) => g.name === `${horario} — ${frecuencia}`);
+  // Buscar el grupo que coincide con la combinación seleccionada
+  const grupoSeleccionado = grupos.find(
+    (g) => g.name === `${horario} — ${frecuencia}`,
+  );
 
-  const selectStyle = {
+  const estiloSelect = {
     width: "100%",
     background: "#080808",
-    border: `1px solid #2a2a2a`,
+    border: "1px solid #2a2a2a",
     color: "#f0ede6",
     fontFamily: "'DM Mono',monospace",
     fontSize: 12,
@@ -68,7 +73,7 @@ const GroupSelector = ({ groups, onSelect, onCancel }) => {
       <select
         value={horario}
         onChange={(e) => setHorario(e.target.value)}
-        style={selectStyle}
+        style={estiloSelect}
       >
         <option value="" disabled>
           Seleccioná horario...
@@ -94,7 +99,7 @@ const GroupSelector = ({ groups, onSelect, onCancel }) => {
       <select
         value={frecuencia}
         onChange={(e) => setFrecuencia(e.target.value)}
-        style={selectStyle}
+        style={estiloSelect}
       >
         <option value="" disabled>
           Seleccioná frecuencia...
@@ -106,9 +111,10 @@ const GroupSelector = ({ groups, onSelect, onCancel }) => {
         ))}
       </select>
 
-      {sel && (
+      {/* Botón confirmar — aparece solo cuando ambos están seleccionados */}
+      {grupoSeleccionado && (
         <button
-          onClick={() => onSelect(sel.id)}
+          onClick={() => onSeleccionar(grupoSeleccionado.id)}
           style={{
             width: "100%",
             background: "#1a1500",
@@ -124,12 +130,12 @@ const GroupSelector = ({ groups, onSelect, onCancel }) => {
             marginBottom: 8,
           }}
         >
-          ✓ Confirmar — {sel.name}
+          ✓ Confirmar — {grupoSeleccionado.name}
         </button>
       )}
-      {onCancel && (
+      {onCancelar && (
         <button
-          onClick={onCancel}
+          onClick={onCancelar}
           style={{
             background: "transparent",
             border: "1px solid #1e1e1e",
@@ -150,8 +156,8 @@ const GroupSelector = ({ groups, onSelect, onCancel }) => {
   );
 };
 
-// ── TEXT LOGO ─────────────────────────────────────────────────────────────────
-const RagnarLogo = () => (
+// ── COMPONENTE: LOGO RAGNAR ───────────────────────────────────────────────────
+const LogoRagnar = () => (
   <div
     style={{
       display: "flex",
@@ -174,7 +180,7 @@ const RagnarLogo = () => (
       style={{
         fontSize: 9,
         letterSpacing: 5,
-        color: "#F5C400",
+        color: Y,
         textTransform: "uppercase",
         lineHeight: 1.4,
       }}
@@ -184,8 +190,8 @@ const RagnarLogo = () => (
   </div>
 );
 
-// ── ACHIEVEMENT CARD ──────────────────────────────────────────────────────────
-const AchievementCard = ({ achievement, athleteName, onClose }) => (
+// ── COMPONENTE: TARJETA DE LOGRO (para compartir) ────────────────────────────
+const TarjetaLogro = ({ logro, nombreAtleta, onCerrar }) => (
   <div
     style={{
       position: "fixed",
@@ -211,6 +217,7 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
           marginBottom: 12,
         }}
       >
+        {/* Fondo con patrón diagonal */}
         <div
           style={{
             position: "absolute",
@@ -253,7 +260,7 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
             marginBottom: 4,
           }}
         >
-          {achievement.value}
+          {logro.value}
         </div>
         <div
           style={{
@@ -264,7 +271,7 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
             marginBottom: 14,
           }}
         >
-          {achievement.movement}
+          {logro.movement}
         </div>
         <div
           style={{ width: 50, height: 2, background: Y, margin: "0 auto 14px" }}
@@ -278,7 +285,7 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
             marginBottom: 4,
           }}
         >
-          {achievement.type === "rm"
+          {logro.type === "rm"
             ? "NUEVO RÉCORD PERSONAL"
             : "NUEVO PR — FOR TIME"}
         </div>
@@ -289,7 +296,7 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
             color: "#ccc",
           }}
         >
-          {athleteName}
+          {nombreAtleta}
         </div>
         <div
           style={{
@@ -310,12 +317,12 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
         </div>
       </div>
       <button
-        onClick={onClose}
+        onClick={onCerrar}
         style={{
           width: "100%",
           padding: 12,
           background: "transparent",
-          border: `1px solid #333`,
+          border: "1px solid #333",
           borderRadius: 2,
           fontFamily: "'DM Mono',monospace",
           fontSize: 10,
@@ -331,340 +338,351 @@ const AchievementCard = ({ achievement, athleteName, onClose }) => (
   </div>
 );
 
-// ── MAIN ──────────────────────────────────────────────────────────────────────
+// ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
 export default function App() {
-  const [screen, setScreen] = useState("login");
+  // Estados de autenticación
+  const [pantalla, setPantalla] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authMode, setAuthMode] = useState("login"); // login | register
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [errorAuth, setErrorAuth] = useState("");
+  const [modoAuth, setModoAuth] = useState("login"); // "login" | "register"
+  const [usuario, setUsuario] = useState(null);
+  const [perfil, setPerfil] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
-  // Athlete state
-  const [athleteTab, setAthleteTab] = useState("rm");
-  const [selectedMov, setSelectedMov] = useState("Back Squat");
-  const [rmRecords, setRmRecords] = useState([]);
+  // Estados del panel atleta
+  const [tabAtleta, setTabAtleta] = useState("rm");
+  const [movSeleccionado, setMovSeleccionado] = useState("Back Squat");
+  const [registrosRM, setRegistrosRM] = useState([]);
   const [forTimes, setForTimes] = useState([]);
-  const [newRM, setNewRM] = useState("");
-  const [newFTName, setNewFTName] = useState("");
-  const [newFTTime, setNewFTTime] = useState("");
-  const [achievement, setAchievement] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [availableGroups, setAvailableGroups] = useState([]);
-  const [changingGroup, setChangingGroup] = useState(false);
-  const [coachAssigningGroup, setCoachAssigningGroup] = useState(false);
+  const [nuevoRM, setNuevoRM] = useState("");
+  const [nuevoFTNombre, setNuevoFTNombre] = useState("");
+  const [nuevoFTTiempo, setNuevoFTTiempo] = useState("");
+  const [logro, setLogro] = useState(null);
+  const [gruprosDisponibles, setGruposDisponibles] = useState([]);
+  const [cambiandoGrupo, setCambiandoGrupo] = useState(false);
 
-  // Coach state
-  const [coachTab, setCoachTab] = useState("athletes");
-  const [athletes, setAthletes] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [groups, setGroups] = useState([]);
+  // Estados del panel coach
+  const [tabCoach, setTabCoach] = useState("atletas");
+  const [atletas, setAtletas] = useState([]);
+  const [pagos, setPagos] = useState([]);
+  const [grupos, setGrupos] = useState([]);
+  const [atletaSeleccionado, setAtletaSeleccionado] = useState(null);
+  const [movAtleta, setMovAtleta] = useState("Back Squat");
+  const [rmsAtleta, setRmsAtleta] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [coachAsignandoGrupo, setCoachAsignandoGrupo] = useState(false);
+  const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
 
-  const [selectedAthlete, setSelectedAthlete] = useState(null);
-  const [selectedAthleteMov, setSelectedAthleteMov] = useState("Back Squat");
-  const [athleteRMs, setAthleteRMs] = useState([]);
-  const [regName, setRegName] = useState("");
-  const regRole = "athlete";
+  // El registro siempre crea atletas — los coaches se crean manualmente en Supabase
+  const rolRegistro = "athlete";
+  const [nombreRegistro, setNombreRegistro] = useState("");
 
-  // ── AUTH ──
+  // ── AUTENTICACIÓN ─────────────────────────────────────────────────────────
   useEffect(() => {
+    // Verificar sesión activa al cargar la app
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) loadUser(session.user);
-      else setLoading(false);
+      if (session?.user) cargarUsuario(session.user);
+      else setCargando(false);
     });
+    // Escuchar cambios de sesión
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) loadUser(session.user);
+    } = supabase.auth.onAuthStateChange((_evento, session) => {
+      if (session?.user) cargarUsuario(session.user);
       else {
-        setUser(null);
-        setProfile(null);
-        setScreen("login");
-        setLoading(false);
+        setUsuario(null);
+        setPerfil(null);
+        setPantalla("login");
+        setCargando(false);
       }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadUser = async (u) => {
-    setUser(u);
+  // Cargar perfil del usuario y redirigir según rol
+  const cargarUsuario = async (u) => {
+    setUsuario(u);
     const { data: prof } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", u.id)
       .single();
-    setProfile(prof);
-    setScreen(prof?.role === "coach" ? "coach" : "athlete");
-    setLoading(false);
+    setPerfil(prof);
+    setPantalla(prof?.role === "coach" ? "coach" : "athlete");
+    setCargando(false);
   };
 
+  // Iniciar sesión
   const handleLogin = async () => {
-    setAuthError("");
-    setSaving(true);
+    setErrorAuth("");
+    setGuardando(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) setAuthError(error.message);
-    setSaving(false);
+    if (error) setErrorAuth("Email o contraseña incorrectos");
+    setGuardando(false);
   };
 
-  const handleRegister = async () => {
-    setAuthError("");
-    setSaving(true);
+  // Registrar nuevo atleta
+  const handleRegistro = async () => {
+    setErrorAuth("");
+    setGuardando(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: regName } },
+      options: { data: { full_name: nombreRegistro } },
     });
     if (error) {
-      setAuthError(error.message);
-      setSaving(false);
+      setErrorAuth(error.message);
+      setGuardando(false);
       return;
     }
     if (data.user) {
       await supabase.from("profiles").upsert(
         {
           id: data.user.id,
-          full_name: regName,
-          role: regRole,
+          full_name: nombreRegistro,
+          role: rolRegistro,
         },
         { onConflict: "id" },
       );
-      // Reload profile immediately
       const { data: prof } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", data.user.id)
         .single();
-      setProfile(prof);
+      setPerfil(prof);
     }
-    setSaving(false);
+    setGuardando(false);
   };
 
-  const handleLogout = async () => {
+  // Cerrar sesión
+  const handleSalir = async () => {
     await supabase.auth.signOut();
   };
 
-  // ── LOAD ATHLETE DATA ──
+  // ── CARGA DE DATOS ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (screen === "athlete" && user) {
-      loadRMs();
-      loadForTimes();
-      loadAvailableGroups();
+    if (pantalla === "athlete" && usuario) {
+      cargarRMs();
+      cargarForTimes();
+      cargarGruposDisponibles();
     }
-    if (screen === "coach" && user) {
-      loadAthletes();
-      loadPayments();
-      loadGroups();
-      loadAvailableGroups();
+    if (pantalla === "coach" && usuario) {
+      cargarAtletas();
+      cargarPagos();
+      cargarGrupos();
+      cargarGruposDisponibles();
     }
-  }, [screen, user]);
+  }, [pantalla, usuario]);
 
-  const loadAvailableGroups = async () => {
+  // Cargar todos los grupos disponibles (para selector)
+  const cargarGruposDisponibles = async () => {
     const { data } = await supabase.from("groups").select("*").order("name");
-    setAvailableGroups(data || []);
+    setGruposDisponibles(data || []);
   };
 
-  const saveAthleteGroup = async (groupId) => {
+  // Guardar grupo del atleta (lo hace el coach)
+  const guardarGrupoAtleta = async (atletaId, grupoId) => {
     await supabase
       .from("profiles")
-      .update({ group_id: groupId })
-      .eq("id", user.id);
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    setProfile(prof);
-  };
-
-  const saveGroupForAthlete = async (athleteId, groupId) => {
-    await supabase
-      .from("profiles")
-      .update({ group_id: groupId })
-      .eq("id", athleteId);
-    await loadAthletes();
-    // Reload selected athlete with fresh data
-    const { data: updated } = await supabase
+      .update({ group_id: grupoId })
+      .eq("id", atletaId);
+    await cargarAtletas();
+    const { data: actualizado } = await supabase
       .from("profiles")
       .select("*, groups(name)")
-      .eq("id", athleteId)
+      .eq("id", atletaId)
       .single();
-    if (updated) setSelectedAthlete(updated);
-    setCoachAssigningGroup(false);
+    if (actualizado) setAtletaSeleccionado(actualizado);
+    setCoachAsignandoGrupo(false);
   };
 
-  const loadRMs = async () => {
+  // Cargar RMs del atleta logueado
+  const cargarRMs = async () => {
     const { data } = await supabase
       .from("rm_records")
       .select("*")
-      .eq("athlete_id", user.id)
+      .eq("athlete_id", usuario.id)
       .order("recorded_at", { ascending: false });
-    setRmRecords(data || []);
+    setRegistrosRM(data || []);
   };
 
-  const loadForTimes = async () => {
+  // Cargar For Times del atleta logueado
+  const cargarForTimes = async () => {
     const { data } = await supabase
       .from("for_time_records")
       .select("*")
-      .eq("athlete_id", user.id)
+      .eq("athlete_id", usuario.id)
       .order("recorded_at", { ascending: false });
     setForTimes(data || []);
   };
 
-  const loadAthletes = async () => {
+  // Cargar lista de atletas (para el coach)
+  const cargarAtletas = async () => {
     const { data } = await supabase
       .from("profiles")
       .select("*, groups(name)")
       .eq("role", "athlete");
-    setAthletes(data || []);
+    setAtletas(data || []);
   };
 
-  const loadPayments = async () => {
-    const now = new Date();
+  // Cargar pagos del mes actual
+  const cargarPagos = async () => {
+    const ahora = new Date();
     const { data, error } = await supabase
       .from("payments")
       .select("athlete_id, status, period_month, period_year")
-      .eq("period_month", now.getMonth() + 1)
-      .eq("period_year", now.getFullYear())
+      .eq("period_month", ahora.getMonth() + 1)
+      .eq("period_year", ahora.getFullYear())
       .eq("status", "paid");
-    if (!error) setPayments(data || []);
+    if (!error) setPagos(data || []);
   };
 
-  const loadGroups = async () => {
+  // Cargar grupos creados
+  const cargarGrupos = async () => {
     const { data } = await supabase.from("groups").select("*");
-    setGroups(data || []);
+    setGrupos(data || []);
   };
 
-  // ── SAVE RM ──
-  const saveRM = async () => {
-    if (!newRM || isNaN(newRM)) return;
-    setSaving(true);
-    const val = parseFloat(newRM);
-    const prev = getCurrentRM(selectedMov);
+  // ── GUARDAR DATOS ─────────────────────────────────────────────────────────
+
+  // Guardar nuevo RM
+  const guardarRM = async () => {
+    if (!nuevoRM || isNaN(nuevoRM)) return;
+    setGuardando(true);
+    const valor = parseFloat(nuevoRM);
+    const anterior = obtenerRMActual(movSeleccionado);
     const { error } = await supabase.from("rm_records").insert({
-      athlete_id: user.id,
-      movement: selectedMov,
-      weight_kg: val,
+      athlete_id: usuario.id,
+      movement: movSeleccionado,
+      weight_kg: valor,
     });
     if (!error) {
-      await loadRMs();
-      setNewRM("");
-      if (!prev || val > prev)
-        setAchievement({
+      await cargarRMs();
+      setNuevoRM("");
+      // Mostrar tarjeta de logro si es un nuevo récord
+      if (!anterior || valor > anterior)
+        setLogro({
           type: "rm",
-          movement: selectedMov,
-          value: `${val}kg`,
+          movement: movSeleccionado,
+          value: `${valor}kg`,
         });
     }
-    setSaving(false);
+    setGuardando(false);
   };
 
-  // ── SAVE FOR TIME ──
-  const saveFT = async () => {
-    if (!newFTName || !newFTTime) return;
-    setSaving(true);
-    // Convert "4:32" to seconds
-    const parts = newFTTime.split(":");
-    const secs =
-      parts.length === 2
-        ? parseInt(parts[0]) * 60 + parseInt(parts[1])
-        : parseInt(parts[0]);
+  // Guardar nuevo For Time
+  const guardarFT = async () => {
+    if (!nuevoFTNombre || !nuevoFTTiempo) return;
+    setGuardando(true);
+    // Convertir "4:32" a segundos
+    const partes = nuevoFTTiempo.split(":");
+    const segundos =
+      partes.length === 2
+        ? parseInt(partes[0]) * 60 + parseInt(partes[1])
+        : parseInt(partes[0]);
     const { error } = await supabase.from("for_time_records").insert({
-      athlete_id: user.id,
-      workout_name: newFTName,
-      time_seconds: secs,
+      athlete_id: usuario.id,
+      workout_name: nuevoFTNombre,
+      time_seconds: segundos,
     });
     if (!error) {
-      await loadForTimes();
-      setAchievement({
+      await cargarForTimes();
+      setLogro({
         type: "fortime",
-        movement: newFTName,
-        value: newFTTime,
+        movement: nuevoFTNombre,
+        value: nuevoFTTiempo,
       });
-      setNewFTName("");
-      setNewFTTime("");
+      setNuevoFTNombre("");
+      setNuevoFTTiempo("");
     }
-    setSaving(false);
+    setGuardando(false);
   };
 
-  // ── MARK PAYMENT ──
-  const markPaid = async (athleteId) => {
-    const now = new Date();
-    const already = payments.some(
-      (p) => p.athlete_id === athleteId && p.status === "paid",
+  // Marcar pago como realizado (solo coach)
+  const marcarPagado = async (atletaId) => {
+    const ahora = new Date();
+    // Evitar duplicados
+    const yaPago = pagos.some(
+      (p) => p.athlete_id === atletaId && p.status === "paid",
     );
-    if (already) return;
-    // Update local state immediately for instant UI feedback
-    const tempPayment = {
-      athlete_id: athleteId,
+    if (yaPago) return;
+    // Actualizar estado local inmediatamente para feedback visual
+    const pagoTemporal = {
+      athlete_id: atletaId,
       status: "paid",
-      period_month: now.getMonth() + 1,
-      period_year: now.getFullYear(),
+      period_month: ahora.getMonth() + 1,
+      period_year: ahora.getFullYear(),
     };
-    setPayments((prev) => [...prev, tempPayment]);
-    // Then save to DB
+    setPagos((prev) => [...prev, pagoTemporal]);
+    // Guardar en la base de datos
     await supabase.from("payments").insert({
-      athlete_id: athleteId,
+      athlete_id: atletaId,
       amount: 0,
-      period_month: now.getMonth() + 1,
-      period_year: now.getFullYear(),
+      period_month: ahora.getMonth() + 1,
+      period_year: ahora.getFullYear(),
       method: "manual",
       status: "paid",
-      registered_by: user.id,
+      registered_by: usuario.id,
     });
-    // Reload to get real data
-    await loadPayments();
-    await loadAthletes();
+    // Recargar datos reales
+    await cargarPagos();
+    await cargarAtletas();
   };
 
-  // ── HELPERS ──
-  const getCurrentRM = (mov) => {
-    const rec = rmRecords.find((r) => r.movement === mov);
-    return rec ? parseFloat(rec.weight_kg) : null;
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+
+  // Obtener el RM más reciente para un movimiento
+  const obtenerRMActual = (mov) => {
+    const reg = registrosRM.find((r) => r.movement === mov);
+    return reg ? parseFloat(reg.weight_kg) : null;
   };
 
-  const formatTime = (secs) => {
-    if (!secs) return "—";
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
+  // Formatear segundos a "min:seg"
+  const formatearTiempo = (segs) => {
+    if (!segs) return "—";
+    const m = Math.floor(segs / 60);
+    const s = segs % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const isPaidThisMonth = (athleteId) => {
-    return payments.some(
-      (p) => p.athlete_id === athleteId && p.status === "paid",
-    );
+  // Verificar si un atleta pagó este mes
+  const pagadoEsteMes = (atletaId) => {
+    return pagos.some((p) => p.athlete_id === atletaId && p.status === "paid");
   };
 
-  const loadAthleteRMs = async (athleteId) => {
+  // Cargar RMs de un atleta específico (vista coach)
+  const cargarRMsAtleta = async (atletaId) => {
     const { data } = await supabase
       .from("rm_records")
       .select("*")
-      .eq("athlete_id", athleteId)
+      .eq("athlete_id", atletaId)
       .order("recorded_at", { ascending: false });
-    setAthleteRMs(data || []);
+    setRmsAtleta(data || []);
   };
 
-  const selectAthlete = (athlete) => {
-    setSelectedAthlete(athlete);
-    setSelectedAthleteMov("Back Squat");
-    loadAthleteRMs(athlete.id);
-    setCoachTab("atleta_detalle");
+  // Seleccionar atleta para ver su detalle
+  const seleccionarAtleta = (atleta) => {
+    setAtletaSeleccionado(atleta);
+    setMovAtleta("Back Squat");
+    cargarRMsAtleta(atleta.id);
+    setTabCoach("detalle_atleta");
   };
 
-  const currentRM = getCurrentRM(selectedMov);
-
-  const getAthleteRM = (mov) => {
-    const rec = athleteRMs.find((r) => r.movement === mov);
-    return rec ? parseFloat(rec.weight_kg) : null;
+  // Obtener RM de un atleta para un movimiento (vista coach)
+  const obtenerRMAtleta = (mov) => {
+    const reg = rmsAtleta.find((r) => r.movement === mov);
+    return reg ? parseFloat(reg.weight_kg) : null;
   };
 
-  // ── STYLES ──
+  // RM actual del movimiento seleccionado
+  const rmActual = obtenerRMActual(movSeleccionado);
+
+  // ── ESTILOS CSS GLOBALES ──────────────────────────────────────────────────
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
@@ -681,8 +699,8 @@ export default function App() {
       letter-spacing:1px;border-radius:2px;cursor:pointer;transition:all .15s}
     .mov.on{background:#1a1500;border-color:${Y};color:${Y}}
     .mov:hover{border-color:#444;color:#bbb}
-    .pct-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #161616}
-    .pct-row:last-child{border-bottom:none}
+    .fila-pct{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #161616}
+    .fila-pct:last-child{border-bottom:none}
     .inp{width:100%;background:#080808;border:none;border-bottom:2px solid ${Y};
       color:#f0ede6;font-family:'DM Mono',monospace;font-size:18px;padding:10px 12px;
       outline:none;letter-spacing:1px;margin-bottom:10px}
@@ -692,19 +710,23 @@ export default function App() {
       color:#0a0a0a;cursor:pointer;transition:all .15s}
     .btn-y:hover{background:#ffd633;transform:translateY(-1px)}
     .btn-y:disabled{background:#333;color:#555;transform:none;cursor:not-allowed}
-    .btn-out{background:transparent;border:1px solid #252525;color:#444;
+    .btn-salir{background:transparent;border:1px solid #252525;color:#444;
       font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;
       padding:6px 14px;cursor:pointer;border-radius:2px;transition:all .15s;text-transform:uppercase}
-    .btn-out:hover{border-color:${Y};color:${Y}}
+    .btn-salir:hover{border-color:${Y};color:${Y}}
     .badge-ok{background:#0d2b1a;color:#4ade80;border:1px solid #166534;padding:2px 10px;border-radius:2px;font-size:9px;letter-spacing:1px}
     .badge-no{background:#2b0d0d;color:#f87171;border:1px solid #991b1b;padding:2px 10px;border-radius:2px;font-size:9px;letter-spacing:1px}
+    .chip-disc{padding:5px 12px;border-radius:2px;border:1px solid #222;background:#111;color:#555;
+      font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+    .chip-disc.on{border-color:${Y};color:${Y};background:#1a1500}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .fu{animation:fadeUp .3s ease forwards}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin .8s linear infinite;display:inline-block}
   `;
 
-  if (loading)
+  // ── PANTALLA DE CARGA ─────────────────────────────────────────────────────
+  if (cargando)
     return (
       <div
         style={{
@@ -744,6 +766,7 @@ export default function App() {
       </div>
     );
 
+  // ── RENDER PRINCIPAL ──────────────────────────────────────────────────────
   return (
     <div
       style={{
@@ -758,7 +781,7 @@ export default function App() {
     >
       <style>{css}</style>
 
-      {/* TOPBAR */}
+      {/* BARRA SUPERIOR CON LOGO */}
       <div style={{ width: "100%", maxWidth: 480, padding: "20px 20px 0" }}>
         <div
           style={{
@@ -768,24 +791,25 @@ export default function App() {
             marginBottom: 10,
           }}
         >
+          {/* Logo clickeable — vuelve al inicio */}
           <div
-            style={{ cursor: user ? "pointer" : "default" }}
+            style={{ cursor: usuario ? "pointer" : "default" }}
             onClick={() => {
-              if (!user) return;
-              if (screen === "athlete") {
-                setAthleteTab("resumen");
+              if (!usuario) return;
+              if (pantalla === "athlete") {
+                setTabAtleta("resumen");
               }
-              if (screen === "coach") {
-                setCoachTab("athletes");
-                setSelectedAthlete(null);
-                setCoachAssigningGroup(false);
+              if (pantalla === "coach") {
+                setTabCoach("atletas");
+                setAtletaSeleccionado(null);
+                setCoachAsignandoGrupo(false);
               }
             }}
           >
-            <RagnarLogo />
+            <LogoRagnar />
           </div>
-          {user && (
-            <button className="btn-out" onClick={handleLogout}>
+          {usuario && (
+            <button className="btn-salir" onClick={handleSalir}>
               Salir
             </button>
           )}
@@ -798,8 +822,8 @@ export default function App() {
         />
       </div>
 
-      {/* ── LOGIN / REGISTER ── */}
-      {screen === "login" && (
+      {/* ── PANTALLA: LOGIN / REGISTRO ─────────────────────────────────────── */}
+      {pantalla === "login" && (
         <div
           className="fu"
           style={{ width: "100%", maxWidth: 480, padding: "36px 20px 20px" }}
@@ -817,20 +841,20 @@ export default function App() {
             ].map(([k, l]) => (
               <button
                 key={k}
-                className={`tab ${authMode === k ? "on" : ""}`}
-                onClick={() => setAuthMode(k)}
+                className={`tab ${modoAuth === k ? "on" : ""}`}
+                onClick={() => setModoAuth(k)}
               >
                 {l}
               </button>
             ))}
           </div>
 
-          {authMode === "register" && (
+          {modoAuth === "register" && (
             <input
               className="inp"
               placeholder="Nombre completo"
-              value={regName}
-              onChange={(e) => setRegName(e.target.value)}
+              value={nombreRegistro}
+              onChange={(e) => setNombreRegistro(e.target.value)}
             />
           )}
 
@@ -849,7 +873,7 @@ export default function App() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {authError && (
+          {errorAuth && (
             <div
               style={{
                 color: "#f87171",
@@ -858,19 +882,19 @@ export default function App() {
                 marginBottom: 10,
               }}
             >
-              {authError}
+              {errorAuth}
             </div>
           )}
 
           <button
             className="btn-y"
             style={{ marginTop: 8 }}
-            onClick={authMode === "login" ? handleLogin : handleRegister}
-            disabled={saving}
+            onClick={modoAuth === "login" ? handleLogin : handleRegistro}
+            disabled={guardando}
           >
-            {saving ? (
+            {guardando ? (
               <span className="spin">◌</span>
-            ) : authMode === "login" ? (
+            ) : modoAuth === "login" ? (
               "INGRESAR"
             ) : (
               "CREAR CUENTA"
@@ -904,12 +928,13 @@ export default function App() {
         </div>
       )}
 
-      {/* ── ATHLETE PANEL ── */}
-      {screen === "athlete" && (
+      {/* ── PANTALLA: PANEL ATLETA ─────────────────────────────────────────── */}
+      {pantalla === "athlete" && (
         <div
           className="fu"
           style={{ width: "100%", maxWidth: 480, padding: "24px 20px" }}
         >
+          {/* Encabezado con nombre y grupo */}
           <div style={{ marginBottom: 18 }}>
             <div
               style={{
@@ -928,9 +953,9 @@ export default function App() {
                 letterSpacing: 2,
               }}
             >
-              {profile?.full_name || user?.email}
+              {perfil?.full_name || usuario?.email}
             </div>
-            {profile?.group_id && availableGroups.length > 0 && (
+            {perfil?.group_id && gruprosDisponibles.length > 0 && (
               <div
                 style={{
                   fontSize: 9,
@@ -939,12 +964,13 @@ export default function App() {
                   marginTop: 2,
                 }}
               >
-                {availableGroups.find((g) => g.id === profile.group_id)?.name ||
-                  ""}
+                {gruprosDisponibles.find((g) => g.id === perfil.group_id)
+                  ?.name || ""}
               </div>
             )}
           </div>
 
+          {/* Tabs de navegación */}
           <div
             style={{
               display: "flex",
@@ -962,16 +988,16 @@ export default function App() {
             ].map(([k, l]) => (
               <button
                 key={k}
-                className={`tab ${athleteTab === k ? "on" : ""}`}
-                onClick={() => setAthleteTab(k)}
+                className={`tab ${tabAtleta === k ? "on" : ""}`}
+                onClick={() => setTabAtleta(k)}
               >
                 {l}
               </button>
             ))}
           </div>
 
-          {/* PERFIL TAB */}
-          {athleteTab === "perfil" && (
+          {/* TAB: PERFIL ─────────────────────────────────────────────────── */}
+          {tabAtleta === "perfil" && (
             <div>
               <div className="card" style={{ marginBottom: 12 }}>
                 <div
@@ -998,7 +1024,7 @@ export default function App() {
                     Nombre
                   </div>
                   <div style={{ fontSize: 16, color: "#f0ede6" }}>
-                    {profile?.full_name}
+                    {perfil?.full_name}
                   </div>
                 </div>
                 <div>
@@ -1013,8 +1039,8 @@ export default function App() {
                   >
                     Email
                   </div>
-                  <div style={{ fontSize: 16, color: "#f0ede6" }}>
-                    {user?.email}
+                  <div style={{ fontSize: 14, color: "#888" }}>
+                    {usuario?.email}
                   </div>
                 </div>
               </div>
@@ -1031,7 +1057,7 @@ export default function App() {
                 >
                   Mi Grupo / Horario
                 </div>
-                {profile?.group_id ? (
+                {perfil?.group_id ? (
                   <div>
                     <div
                       style={{
@@ -1041,7 +1067,7 @@ export default function App() {
                         color: Y,
                       }}
                     >
-                      {availableGroups.find((g) => g.id === profile.group_id)
+                      {gruprosDisponibles.find((g) => g.id === perfil.group_id)
                         ?.name || "—"}
                     </div>
                     <div
@@ -1052,7 +1078,7 @@ export default function App() {
                         marginTop: 4,
                       }}
                     >
-                      {availableGroups.find((g) => g.id === profile.group_id)
+                      {gruprosDisponibles.find((g) => g.id === perfil.group_id)
                         ?.schedule || ""}
                     </div>
                     <div
@@ -1077,8 +1103,8 @@ export default function App() {
             </div>
           )}
 
-          {/* RESUMEN TAB */}
-          {athleteTab === "resumen" && (
+          {/* TAB: RESUMEN ────────────────────────────────────────────────── */}
+          {tabAtleta === "resumen" && (
             <>
               <div
                 style={{
@@ -1088,8 +1114,8 @@ export default function App() {
                   marginBottom: 16,
                 }}
               >
-                {MOVEMENTS.map((m) => {
-                  const val = getCurrentRM(m);
+                {MOVIMIENTOS.map((m) => {
+                  const val = obtenerRMActual(m);
                   return (
                     <div
                       key={m}
@@ -1099,8 +1125,8 @@ export default function App() {
                         borderColor: val ? "#2a2a2a" : BORDER,
                       }}
                       onClick={() => {
-                        setSelectedMov(m);
-                        setAthleteTab("rm");
+                        setMovSeleccionado(m);
+                        setTabAtleta("rm");
                       }}
                     >
                       <div
@@ -1184,7 +1210,7 @@ export default function App() {
                   );
                 })}
               </div>
-              {MOVEMENTS.every((m) => !getCurrentRM(m)) && (
+              {MOVIMIENTOS.every((m) => !obtenerRMActual(m)) && (
                 <div
                   style={{
                     textAlign: "center",
@@ -1205,8 +1231,8 @@ export default function App() {
             </>
           )}
 
-          {/* RM TAB */}
-          {athleteTab === "rm" && (
+          {/* TAB: RMs ───────────────────────────────────────────────────── */}
+          {tabAtleta === "rm" && (
             <>
               <div
                 style={{
@@ -1216,11 +1242,11 @@ export default function App() {
                   marginBottom: 16,
                 }}
               >
-                {MOVEMENTS.map((m) => (
+                {MOVIMIENTOS.map((m) => (
                   <button
                     key={m}
-                    className={`mov ${selectedMov === m ? "on" : ""}`}
-                    onClick={() => setSelectedMov(m)}
+                    className={`mov ${movSeleccionado === m ? "on" : ""}`}
+                    onClick={() => setMovSeleccionado(m)}
                   >
                     {m}
                   </button>
@@ -1238,18 +1264,18 @@ export default function App() {
                       marginBottom: 2,
                     }}
                   >
-                    1RM — {selectedMov}
+                    1RM — {movSeleccionado}
                   </div>
                   <div
                     style={{
                       fontFamily: "'Bebas Neue',sans-serif",
                       fontSize: 56,
                       lineHeight: 1,
-                      color: currentRM ? Y : "#1e1e1e",
+                      color: rmActual ? Y : "#1e1e1e",
                     }}
                   >
-                    {currentRM || "—"}
-                    {currentRM && (
+                    {rmActual || "—"}
+                    {rmActual && (
                       <span
                         style={{ fontSize: 20, color: "#fff", marginLeft: 6 }}
                       >
@@ -1259,7 +1285,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {currentRM ? (
+                {rmActual ? (
                   <>
                     <div
                       style={{
@@ -1272,8 +1298,8 @@ export default function App() {
                     >
                       Porcentajes
                     </div>
-                    {PCTS.map((p) => (
-                      <div key={p} className="pct-row">
+                    {PORCENTAJES.map((p) => (
+                      <div key={p} className="fila-pct">
                         <div
                           style={{
                             width: 44,
@@ -1311,7 +1337,7 @@ export default function App() {
                             color: p >= 85 ? Y : "#f0ede6",
                           }}
                         >
-                          {Math.round((currentRM * p) / 100)}
+                          {Math.round((rmActual * p) / 100)}
                           <span
                             style={{
                               fontSize: 11,
@@ -1344,24 +1370,28 @@ export default function App() {
                     marginBottom: 10,
                   }}
                 >
-                  {currentRM ? "Actualizar" : "Cargar"} RM — {selectedMov}
+                  {rmActual ? "Actualizar" : "Cargar"} RM — {movSeleccionado}
                 </div>
                 <input
                   className="inp"
                   type="number"
                   placeholder="kg"
-                  value={newRM}
-                  onChange={(e) => setNewRM(e.target.value)}
+                  value={nuevoRM}
+                  onChange={(e) => setNuevoRM(e.target.value)}
                 />
-                <button className="btn-y" onClick={saveRM} disabled={saving}>
-                  {saving ? <span className="spin">◌</span> : "GUARDAR RM"}
+                <button
+                  className="btn-y"
+                  onClick={guardarRM}
+                  disabled={guardando}
+                >
+                  {guardando ? <span className="spin">◌</span> : "GUARDAR RM"}
                 </button>
               </div>
             </>
           )}
 
-          {/* FOR TIME TAB */}
-          {athleteTab === "fortime" && (
+          {/* TAB: FOR TIME ───────────────────────────────────────────────── */}
+          {tabAtleta === "fortime" && (
             <>
               <div className="card" style={{ marginBottom: 12 }}>
                 <div
@@ -1378,17 +1408,25 @@ export default function App() {
                 <input
                   className="inp"
                   placeholder="Workout (ej: Fran, Murph...)"
-                  value={newFTName}
-                  onChange={(e) => setNewFTName(e.target.value)}
+                  value={nuevoFTNombre}
+                  onChange={(e) => setNuevoFTNombre(e.target.value)}
                 />
                 <input
                   className="inp"
                   placeholder="Tiempo (ej: 4:32)"
-                  value={newFTTime}
-                  onChange={(e) => setNewFTTime(e.target.value)}
+                  value={nuevoFTTiempo}
+                  onChange={(e) => setNuevoFTTiempo(e.target.value)}
                 />
-                <button className="btn-y" onClick={saveFT} disabled={saving}>
-                  {saving ? <span className="spin">◌</span> : "GUARDAR PR ⚡"}
+                <button
+                  className="btn-y"
+                  onClick={guardarFT}
+                  disabled={guardando}
+                >
+                  {guardando ? (
+                    <span className="spin">◌</span>
+                  ) : (
+                    "GUARDAR PR ⚡"
+                  )}
                 </button>
               </div>
 
@@ -1434,7 +1472,7 @@ export default function App() {
                           color: "#fff",
                         }}
                       >
-                        {formatTime(ft.time_seconds)}
+                        {formatearTiempo(ft.time_seconds)}
                       </div>
                     </div>
                   ))}
@@ -1443,11 +1481,11 @@ export default function App() {
             </>
           )}
 
-          {/* LOGROS TAB */}
-          {athleteTab === "logros" && (
+          {/* TAB: LOGROS ─────────────────────────────────────────────────── */}
+          {tabAtleta === "logros" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {MOVEMENTS.map((m) => {
-                const val = getCurrentRM(m);
+              {MOVIMIENTOS.map((m) => {
+                const val = obtenerRMActual(m);
                 if (!val) return null;
                 return (
                   <div
@@ -1487,11 +1525,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() =>
-                        setAchievement({
-                          type: "rm",
-                          movement: m,
-                          value: `${val}kg`,
-                        })
+                        setLogro({ type: "rm", movement: m, value: `${val}kg` })
                       }
                       style={{
                         background: "#1a1500",
@@ -1539,15 +1573,15 @@ export default function App() {
                         color: "#fff",
                       }}
                     >
-                      {formatTime(ft.time_seconds)}
+                      {formatearTiempo(ft.time_seconds)}
                     </div>
                   </div>
                   <button
                     onClick={() =>
-                      setAchievement({
+                      setLogro({
                         type: "fortime",
                         movement: ft.workout_name,
-                        value: formatTime(ft.time_seconds),
+                        value: formatearTiempo(ft.time_seconds),
                       })
                     }
                     style={{
@@ -1567,7 +1601,7 @@ export default function App() {
                   </button>
                 </div>
               ))}
-              {rmRecords.length === 0 && forTimes.length === 0 && (
+              {registrosRM.length === 0 && forTimes.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
@@ -1587,12 +1621,13 @@ export default function App() {
         </div>
       )}
 
-      {/* ── COACH PANEL ── */}
-      {screen === "coach" && (
+      {/* ── PANTALLA: PANEL COACH ──────────────────────────────────────────── */}
+      {pantalla === "coach" && (
         <div
           className="fu"
           style={{ width: "100%", maxWidth: 480, padding: "24px 20px" }}
         >
+          {/* Encabezado coach */}
           <div style={{ marginBottom: 16 }}>
             <div
               style={{
@@ -1611,11 +1646,11 @@ export default function App() {
                 letterSpacing: 2,
               }}
             >
-              {profile?.full_name || "Admin"}
+              {perfil?.full_name || "Admin"}
             </div>
           </div>
 
-          {/* Stats */}
+          {/* Estadísticas rápidas */}
           <div
             style={{
               display: "grid",
@@ -1625,15 +1660,15 @@ export default function App() {
             }}
           >
             {[
-              { label: "Atletas", val: athletes.length, color: "#fff" },
+              { label: "Atletas", val: atletas.length, color: "#fff" },
               {
                 label: "Al día",
-                val: athletes.filter((a) => isPaidThisMonth(a.id)).length,
+                val: atletas.filter((a) => pagadoEsteMes(a.id)).length,
                 color: "#4ade80",
               },
               {
                 label: "Deben",
-                val: athletes.filter((a) => !isPaidThisMonth(a.id)).length,
+                val: atletas.filter((a) => !pagadoEsteMes(a.id)).length,
                 color: "#f87171",
               },
             ].map((s) => (
@@ -1667,6 +1702,7 @@ export default function App() {
             ))}
           </div>
 
+          {/* Tabs de navegación coach */}
           <div
             style={{
               display: "flex",
@@ -1675,22 +1711,22 @@ export default function App() {
             }}
           >
             {[
-              ["athletes", "Atletas"],
-              ["payments", "Pagos"],
-              ["groups", "Grupos"],
+              ["atletas", "Atletas"],
+              ["pagos", "Pagos"],
+              ["grupos", "Grupos"],
             ].map(([k, l]) => (
               <button
                 key={k}
-                className={`tab ${coachTab === k || (coachTab === "atleta_detalle" && k === "athletes") ? "on" : ""}`}
-                onClick={() => setCoachTab(k)}
+                className={`tab ${tabCoach === k || (tabCoach === "detalle_atleta" && k === "atletas") ? "on" : ""}`}
+                onClick={() => setTabCoach(k)}
               >
                 {l}
               </button>
             ))}
           </div>
 
-          {/* ATHLETE DETAIL VIEW */}
-          {coachTab === "atleta_detalle" && selectedAthlete && (
+          {/* VISTA: DETALLE DE ATLETA ─────────────────────────────────────── */}
+          {tabCoach === "detalle_atleta" && atletaSeleccionado && (
             <>
               <div
                 style={{
@@ -1702,12 +1738,12 @@ export default function App() {
               >
                 <button
                   onClick={() => {
-                    setCoachTab("athletes");
-                    setCoachAssigningGroup(false);
+                    setTabCoach("atletas");
+                    setCoachAsignandoGrupo(false);
                   }}
                   style={{
                     background: "transparent",
-                    border: `1px solid #2a2a2a`,
+                    border: "1px solid #2a2a2a",
                     color: "#555",
                     fontFamily: "'DM Mono',monospace",
                     fontSize: 10,
@@ -1737,12 +1773,12 @@ export default function App() {
                       letterSpacing: 2,
                     }}
                   >
-                    {selectedAthlete.full_name}
+                    {atletaSeleccionado.full_name}
                   </div>
                 </div>
               </div>
 
-              {/* Grupo del atleta */}
+              {/* Asignación de grupo desde el coach */}
               <div className="card" style={{ marginBottom: 16 }}>
                 <div
                   style={{
@@ -1755,7 +1791,7 @@ export default function App() {
                 >
                   Grupo / Horario
                 </div>
-                {!coachAssigningGroup ? (
+                {!coachAsignandoGrupo ? (
                   <div
                     style={{
                       display: "flex",
@@ -1764,7 +1800,7 @@ export default function App() {
                     }}
                   >
                     <div>
-                      {selectedAthlete.group_id ? (
+                      {atletaSeleccionado.group_id ? (
                         <>
                           <div
                             style={{
@@ -1774,8 +1810,8 @@ export default function App() {
                               color: Y,
                             }}
                           >
-                            {availableGroups.find(
-                              (g) => g.id === selectedAthlete.group_id,
+                            {gruprosDisponibles.find(
+                              (g) => g.id === atletaSeleccionado.group_id,
                             )?.name || "—"}
                           </div>
                           <div
@@ -1785,8 +1821,8 @@ export default function App() {
                               letterSpacing: 1,
                             }}
                           >
-                            {availableGroups.find(
-                              (g) => g.id === selectedAthlete.group_id,
+                            {gruprosDisponibles.find(
+                              (g) => g.id === atletaSeleccionado.group_id,
                             )?.schedule || ""}
                           </div>
                         </>
@@ -1803,10 +1839,10 @@ export default function App() {
                       )}
                     </div>
                     <button
-                      onClick={() => setCoachAssigningGroup(true)}
+                      onClick={() => setCoachAsignandoGrupo(true)}
                       style={{
                         background: "transparent",
-                        border: `1px solid #2a2a2a`,
+                        border: "1px solid #2a2a2a",
                         color: "#555",
                         fontFamily: "'DM Mono',monospace",
                         fontSize: 9,
@@ -1817,21 +1853,70 @@ export default function App() {
                         textTransform: "uppercase",
                       }}
                     >
-                      {selectedAthlete.group_id ? "Cambiar" : "Asignar"}
+                      {atletaSeleccionado.group_id ? "Cambiar" : "Asignar"}
                     </button>
                   </div>
                 ) : (
-                  <GroupSelector
-                    groups={availableGroups}
-                    onSelect={(groupId) =>
-                      saveGroupForAthlete(selectedAthlete.id, groupId)
+                  <SelectorGrupo
+                    grupos={gruprosDisponibles}
+                    onSeleccionar={(grupoId) =>
+                      guardarGrupoAtleta(atletaSeleccionado.id, grupoId)
                     }
-                    onCancel={() => setCoachAssigningGroup(false)}
+                    onCancelar={() => setCoachAsignandoGrupo(false)}
                   />
                 )}
               </div>
 
-              {/* RM Grid resumen */}
+              {/* Asignación de disciplina desde el coach */}
+              <div className="card" style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: 3,
+                    color: "#333",
+                    textTransform: "uppercase",
+                    marginBottom: 10,
+                  }}
+                >
+                  Disciplina
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {DISCIPLINAS.map((d) => (
+                    <button
+                      key={d}
+                      onClick={async () => {
+                        await supabase
+                          .from("profiles")
+                          .update({ discipline: d })
+                          .eq("id", atletaSeleccionado.id);
+                        setAtletaSeleccionado((prev) => ({
+                          ...prev,
+                          discipline: d,
+                        }));
+                        await cargarAtletas();
+                      }}
+                      style={{
+                        padding: "8px 14px",
+                        background:
+                          atletaSeleccionado.discipline === d
+                            ? "#1a1500"
+                            : "#0d0d0d",
+                        border: `1px solid ${atletaSeleccionado.discipline === d ? Y : "#2a2a2a"}`,
+                        color: atletaSeleccionado.discipline === d ? Y : "#555",
+                        fontFamily: "'DM Mono',monospace",
+                        fontSize: 10,
+                        letterSpacing: 1,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {atletaSeleccionado.discipline === d ? "✓ " : ""}
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div
                 style={{
                   display: "grid",
@@ -1840,17 +1925,17 @@ export default function App() {
                   marginBottom: 16,
                 }}
               >
-                {MOVEMENTS.map((m) => {
-                  const val = getAthleteRM(m);
+                {MOVIMIENTOS.map((m) => {
+                  const val = obtenerRMAtleta(m);
                   return (
                     <div
                       key={m}
                       className="card"
                       style={{
                         cursor: "pointer",
-                        borderColor: selectedAthleteMov === m ? Y : BORDER,
+                        borderColor: movAtleta === m ? Y : BORDER,
                       }}
-                      onClick={() => setSelectedAthleteMov(m)}
+                      onClick={() => setMovAtleta(m)}
                     >
                       <div
                         style={{
@@ -1869,7 +1954,7 @@ export default function App() {
                             fontFamily: "'Bebas Neue',sans-serif",
                             fontSize: 36,
                             lineHeight: 1,
-                            color: selectedAthleteMov === m ? Y : "#ccc",
+                            color: movAtleta === m ? Y : "#ccc",
                           }}
                         >
                           {val}
@@ -1900,7 +1985,7 @@ export default function App() {
               </div>
 
               {/* Porcentajes del movimiento seleccionado */}
-              {getAthleteRM(selectedAthleteMov) && (
+              {obtenerRMAtleta(movAtleta) && (
                 <div className="card">
                   <div
                     style={{
@@ -1911,12 +1996,12 @@ export default function App() {
                       marginBottom: 12,
                     }}
                   >
-                    Porcentajes — {selectedAthleteMov}
+                    Porcentajes — {movAtleta}
                   </div>
-                  {PCTS.map((p) => {
-                    const val = getAthleteRM(selectedAthleteMov);
+                  {PORCENTAJES.map((p) => {
+                    const val = obtenerRMAtleta(movAtleta);
                     return (
-                      <div key={p} className="pct-row">
+                      <div key={p} className="fila-pct">
                         <div
                           style={{
                             width: 44,
@@ -1973,17 +2058,45 @@ export default function App() {
             </>
           )}
 
-          {coachTab === "athletes" && (
+          {/* TAB: ATLETAS ────────────────────────────────────────────────── */}
+          {tabCoach === "atletas" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* Buscador */}
+              {/* Buscador por nombre */}
               <input
                 className="inp"
                 placeholder="Buscar atleta..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
                 style={{ marginBottom: 4 }}
               />
-              {athletes.length === 0 && (
+
+              {/* Filtro por disciplina */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                  marginBottom: 8,
+                }}
+              >
+                <button
+                  className={`chip-disc ${filtroDisciplina === "todas" ? "on" : ""}`}
+                  onClick={() => setFiltroDisciplina("todas")}
+                >
+                  Todas
+                </button>
+                {DISCIPLINAS.map((d) => (
+                  <button
+                    key={d}
+                    className={`chip-disc ${filtroDisciplina === d ? "on" : ""}`}
+                    onClick={() => setFiltroDisciplina(d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+
+              {atletas.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
@@ -1996,12 +2109,19 @@ export default function App() {
                   SIN ATLETAS REGISTRADOS AÚN
                 </div>
               )}
-              {athletes
-                .filter((a) =>
-                  a.full_name
+
+              {atletas
+                .filter((a) => {
+                  // Filtrar por nombre
+                  const coincideNombre = a.full_name
                     ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase()),
-                )
+                    .includes(busqueda.toLowerCase());
+                  // Filtrar por disciplina (campo discipline en el perfil)
+                  const coincideDisciplina =
+                    filtroDisciplina === "todas" ||
+                    a.discipline === filtroDisciplina;
+                  return coincideNombre && coincideDisciplina;
+                })
                 .map((a) => (
                   <div
                     key={a.id}
@@ -2020,13 +2140,18 @@ export default function App() {
                         style={{ fontSize: 9, color: "#333", letterSpacing: 1 }}
                       >
                         {a.groups?.name || "Sin grupo"}
+                        {a.discipline && (
+                          <span style={{ color: "#444", marginLeft: 6 }}>
+                            · {a.discipline}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div
                       style={{ display: "flex", alignItems: "center", gap: 8 }}
                     >
                       <button
-                        onClick={() => selectAthlete(a)}
+                        onClick={() => seleccionarAtleta(a)}
                         style={{
                           background: "#1a1500",
                           border: `1px solid ${Y}`,
@@ -2044,10 +2169,10 @@ export default function App() {
                       </button>
                       <span
                         className={
-                          isPaidThisMonth(a.id) ? "badge-ok" : "badge-no"
+                          pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"
                         }
                       >
-                        {isPaidThisMonth(a.id) ? "AL DÍA" : "DEBE"}
+                        {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
                       </span>
                     </div>
                   </div>
@@ -2055,9 +2180,10 @@ export default function App() {
             </div>
           )}
 
-          {coachTab === "payments" && (
+          {/* TAB: PAGOS ──────────────────────────────────────────────────── */}
+          {tabCoach === "pagos" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {athletes.length === 0 && (
+              {atletas.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
@@ -2070,8 +2196,8 @@ export default function App() {
                   SIN ATLETAS REGISTRADOS AÚN
                 </div>
               )}
-              {athletes.map((a) => {
-                const paid = isPaidThisMonth(a.id);
+              {atletas.map((a) => {
+                const pago = pagadoEsteMes(a.id);
                 return (
                   <div
                     key={a.id}
@@ -2090,15 +2216,15 @@ export default function App() {
                         style={{
                           fontSize: 9,
                           letterSpacing: 1,
-                          color: paid ? "#4ade80" : "#f87171",
+                          color: pago ? "#4ade80" : "#f87171",
                         }}
                       >
-                        {paid ? "✓ Al día este mes" : "Cuota pendiente"}
+                        {pago ? "✓ Al día este mes" : "Cuota pendiente"}
                       </div>
                     </div>
-                    {!paid ? (
+                    {!pago ? (
                       <button
-                        onClick={() => markPaid(a.id)}
+                        onClick={() => marcarPagado(a.id)}
                         style={{
                           background: "#0d2b1a",
                           border: "1px solid #166534",
@@ -2123,9 +2249,10 @@ export default function App() {
             </div>
           )}
 
-          {coachTab === "groups" && (
+          {/* TAB: GRUPOS ─────────────────────────────────────────────────── */}
+          {tabCoach === "grupos" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {groups.length === 0 && (
+              {grupos.length === 0 && (
                 <div
                   style={{
                     textAlign: "center",
@@ -2138,8 +2265,8 @@ export default function App() {
                   SIN GRUPOS CREADOS AÚN
                 </div>
               )}
-              {groups.map((g) => {
-                const members = athletes.filter((a) => a.group_id === g.id);
+              {grupos.map((g) => {
+                const miembros = atletas.filter((a) => a.group_id === g.id);
                 return (
                   <div key={g.id} className="card">
                     <div
@@ -2163,10 +2290,10 @@ export default function App() {
                       <div
                         style={{ fontSize: 9, color: "#444", letterSpacing: 2 }}
                       >
-                        {members.length} atletas
+                        {miembros.length} atletas
                       </div>
                     </div>
-                    {members.map((a) => (
+                    {miembros.map((a) => (
                       <div
                         key={a.id}
                         style={{
@@ -2181,10 +2308,10 @@ export default function App() {
                         {a.full_name}
                         <span
                           className={
-                            isPaidThisMonth(a.id) ? "badge-ok" : "badge-no"
+                            pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"
                           }
                         >
-                          {isPaidThisMonth(a.id) ? "AL DÍA" : "DEBE"}
+                          {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
                         </span>
                       </div>
                     ))}
@@ -2196,11 +2323,12 @@ export default function App() {
         </div>
       )}
 
-      {achievement && (
-        <AchievementCard
-          achievement={achievement}
-          athleteName={profile?.full_name}
-          onClose={() => setAchievement(null)}
+      {/* Tarjeta de logro (overlay) */}
+      {logro && (
+        <TarjetaLogro
+          logro={logro}
+          nombreAtleta={perfil?.full_name}
+          onCerrar={() => setLogro(null)}
         />
       )}
     </div>
