@@ -1,6 +1,6 @@
 // ── SERVICE WORKER — RAGNAR CROSS TRAINING ───────────────────────────────────
 // Versión del caché — incrementar para forzar actualización
-const VERSION_CACHE = "ragnar-v1";
+const VERSION_CACHE = "ragnar-v2";
 
 // Archivos que se cachean al instalar
 const ARCHIVOS_CACHE = [
@@ -8,8 +8,11 @@ const ARCHIVOS_CACHE = [
   "/index.html",
   "/src/main.jsx",
   "/src/App.jsx",
-  "/src/App.css",
   "/src/index.css",
+  "/logo-icon.png",
+  "/logo-ragnar.png",
+  "/icon-192.png",
+  "/icon-512.png",
 ];
 
 // Instalación: cachear archivos esenciales
