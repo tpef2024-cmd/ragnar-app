@@ -14,10 +14,15 @@ export default function CoachPanel({
 }) {
   const {
     atletas,
+    pagos,
+    planes,
     grupos,
     gruposDisponibles,
     pagadoEsteMes,
-    marcarPagado,
+    ingresosDelMes,
+    cobrarCuota,
+    revertirPago,
+    guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
     cargarRMsAtleta,
@@ -100,8 +105,13 @@ export default function CoachPanel({
       {tabCoach === "pagos" && (
         <CoachPagos
           atletas={atletas}
+          pagos={pagos}
+          planes={planes}
           pagadoEsteMes={pagadoEsteMes}
-          onMarcarPagado={marcarPagado}
+          ingresosDelMes={ingresosDelMes}
+          onCobrarCuota={cobrarCuota}
+          onRevertirPago={revertirPago}
+          onGuardarPrecioPlan={guardarPrecioPlan}
         />
       )}
       {tabCoach === "grupos" && (
