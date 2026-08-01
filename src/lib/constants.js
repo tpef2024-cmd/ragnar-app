@@ -48,6 +48,13 @@ export const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutos
 // Tiempo de aviso previo antes de desloguear (se muestra un modal de countdown)
 export const INACTIVITY_WARNING_MS = 60 * 1000; // 60 segundos
 
+// ── ASISTENCIA POR QR ─────────────────────────────────────────────────────
+// Código fijo que debe contener el QR impreso en la entrada del gimnasio.
+// Si en algún momento se quiere invalidar el QR viejo (por ejemplo, se perdió
+// el cartel y hay que asegurarse de que nadie use una foto vieja), alcanza
+// con cambiar este valor y volver a imprimir un QR nuevo con el mismo texto.
+export const QR_CHECKIN_CODE = "RAGNAR-GYM-CHECKIN-2026";
+
 // ── LAYOUT ─────────────────────────────────────────────────────────────────
 // Breakpoint a partir del cual se activa el layout de escritorio (sidebar + grilla)
 export const DESKTOP_BREAKPOINT_PX = 1024;

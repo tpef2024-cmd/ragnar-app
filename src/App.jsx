@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { useAthleteData } from "./hooks/useAthleteData";
+import { useAttendance } from "./hooks/useAttendance";
 import { useCoachData } from "./hooks/useCoachData";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
@@ -15,6 +16,7 @@ import InactivityWarningModal from "./components/shared/InactivityWarningModal";
 
 const TABS_ATLETA = [
   ["resumen", "📊 Resumen"],
+  ["asistencia", "📷 Asistencia"],
   ["rm", "⚡ RMs"],
   ["fortime", "⏱ For Time"],
   ["logros", "🏆 Logros"],
@@ -40,6 +42,7 @@ export default function App() {
 
   // ── DATOS ─────────────────────────────────────────────────────────────────
   const athleteDataRaw = useAthleteData(usuario, pantalla === "athlete");
+  const attendanceData = useAttendance(usuario, pantalla === "athlete");
   const coachData = useCoachData(usuario, pantalla === "coach");
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
@@ -177,6 +180,7 @@ export default function App() {
             perfil={perfil}
             usuario={usuario}
             athleteData={athleteData}
+            attendanceData={attendanceData}
             guardando={guardando}
           />
         )}
