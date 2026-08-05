@@ -16,6 +16,7 @@ export default function AppShell({
   onLogoClick,
   onSalir,
   children,
+  badges = {}, // { [tabKey]: numero } — muestra un contador rojo al lado del label
 }) {
   return (
     <div className="app-shell">
@@ -25,10 +26,27 @@ export default function AppShell({
           <LogoRagnar size="large" />
         </div>
 
-        <div style={{ marginTop: 30, marginBottom: 6, fontSize: 9, color: Y, letterSpacing: 3, textTransform: "uppercase" }}>
+        <div
+          style={{
+            marginTop: 30,
+            marginBottom: 6,
+            fontSize: 9,
+            color: Y,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+          }}
+        >
           {rolLabel}
         </div>
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: "#fff", marginBottom: 30, letterSpacing: 1 }}>
+        <div
+          style={{
+            fontFamily: "'Bebas Neue',sans-serif",
+            fontSize: 20,
+            color: "#fff",
+            marginBottom: 30,
+            letterSpacing: 1,
+          }}
+        >
           {nombreUsuario}
         </div>
 
@@ -40,11 +58,18 @@ export default function AppShell({
               onClick={() => onCambiarTab(key)}
             >
               {label}
+              {!!badges[key] && (
+                <span className="tab-badge">{badges[key]}</span>
+              )}
             </button>
           ))}
         </nav>
 
-        <button className="btn-salir" style={{ marginTop: "auto" }} onClick={onSalir}>
+        <button
+          className="btn-salir"
+          style={{ marginTop: "auto" }}
+          onClick={onSalir}
+        >
           Salir
         </button>
       </aside>
@@ -53,13 +78,27 @@ export default function AppShell({
       <div className="main-content">
         {/* BARRA SUPERIOR — solo visible en mobile */}
         <div className="mobile-topbar">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
             <div style={{ cursor: "pointer" }} onClick={onLogoClick}>
               <LogoRagnar />
             </div>
-            <button className="btn-salir" onClick={onSalir}>Salir</button>
+            <button className="btn-salir" onClick={onSalir}>
+              Salir
+            </button>
           </div>
-          <div style={{ height: 1, background: `linear-gradient(90deg,${Y},transparent)` }} />
+          <div
+            style={{
+              height: 1,
+              background: `linear-gradient(90deg,${Y},transparent)`,
+            }}
+          />
           <div className="mobile-tabs">
             {tabs.map(([key, label]) => (
               <button
@@ -68,6 +107,9 @@ export default function AppShell({
                 onClick={() => onCambiarTab(key)}
               >
                 {label}
+                {!!badges[key] && (
+                  <span className="tab-badge">{badges[key]}</span>
+                )}
               </button>
             ))}
           </div>

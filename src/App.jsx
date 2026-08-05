@@ -8,6 +8,7 @@ import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
 
 import LoginScreen from "./screens/LoginScreen";
+import EstadoCuentaScreen from "./screens/EstadoCuentaScreen";
 import AppShell from "./components/layout/AppShell";
 import AthletePanel from "./screens/athlete/AthletePanel";
 import CoachPanel from "./screens/coach/CoachPanel";
@@ -25,6 +26,7 @@ const TABS_ATLETA = [
 
 const TABS_COACH = [
   ["atletas", "Atletas"],
+  ["solicitudes", "Solicitudes"],
   ["pagos", "Pagos"],
   ["grupos", "Grupos"],
 ];
@@ -152,6 +154,16 @@ export default function App() {
     );
   }
 
+  // ── PANTALLA: CUENTA PENDIENTE DE APROBACIÓN O REVOCADA ──────────────────
+  if (pantalla === "pendiente" || pantalla === "revocado") {
+    return (
+      <>
+        <style>{globalStyles}</style>
+        <EstadoCuentaScreen estado={pantalla} onSalir={logout} />
+      </>
+    );
+  }
+
   // ── PANTALLA: ATLETA O COACH (dentro del shell responsive) ───────────────
   return (
     <>
@@ -170,6 +182,11 @@ export default function App() {
         onCambiarTab={pantalla === "athlete" ? setTabAtleta : setTabCoach}
         onLogoClick={handleLogoClick}
         onSalir={logout}
+        badges={
+          pantalla === "coach" && coachData.pendientes.length > 0
+            ? { solicitudes: coachData.pendientes.length }
+            : {}
+        }
       >
         {pantalla === "athlete" && (
           <AthletePanel

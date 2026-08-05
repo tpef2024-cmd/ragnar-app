@@ -18,6 +18,7 @@ export default function CoachDetalleAtleta({
   onGuardarDisciplina,
   onAtletaActualizada,
   onVolver,
+  onRevocarAcceso,
 }) {
   const [rmsAtleta, setRmsAtleta] = useState([]);
   const [movAtleta, setMovAtleta] = useState("Back Squat");
@@ -48,6 +49,18 @@ export default function CoachDetalleAtleta({
   const handleGuardarDisciplina = async (disciplina) => {
     await onGuardarDisciplina(atleta.id, disciplina);
     onAtletaActualizada({ discipline: disciplina });
+  };
+
+  // Revocar el acceso del atleta — pide confirmación porque bloquea su login
+  // inmediatamente y vuelve a la lista, ya que deja de aparecer entre los
+  // atletas aprobados.
+  const handleRevocarAcceso = async () => {
+    const confirmado = window.confirm(
+      `¿Revocar el acceso de ${atleta.full_name}? No va a poder ingresar a la app hasta que lo vuelvas a aprobar.`,
+    );
+    if (!confirmado) return;
+    await onRevocarAcceso(atleta.id);
+    onVolver();
   };
 
   return (
@@ -97,6 +110,26 @@ export default function CoachDetalleAtleta({
             {atleta.full_name}
           </div>
         </div>
+
+        <button
+          onClick={handleRevocarAcceso}
+          style={{
+            marginLeft: "auto",
+            background: "#1f0f0f",
+            border: "1px solid #f87171",
+            color: "#f87171",
+            fontFamily: "'DM Mono',monospace",
+            fontSize: 9,
+            letterSpacing: 1,
+            padding: "6px 12px",
+            borderRadius: 2,
+            cursor: "pointer",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Revocar acceso
+        </button>
       </div>
 
       {/* Asignación de grupo */}

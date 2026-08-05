@@ -42,6 +42,9 @@ export const globalStyles = `
   .chip-disc{padding:5px 12px;border-radius:2px;border:1px solid #2a2a2a;background:#151515;color:#b3b3b3;
     font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase}
   .chip-disc.on{border-color:${Y};color:${Y};background:#1a1500}
+  .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;
+    padding:0 4px;margin-left:6px;border-radius:8px;background:#f87171;color:#0a0a0a;
+    font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   .fu{animation:fadeUp .3s ease forwards}
   @keyframes spin{to{transform:rotate(360deg)}}

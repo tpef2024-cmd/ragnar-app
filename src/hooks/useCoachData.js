@@ -5,18 +5,47 @@ import { supabase } from "../lib/supabaseClient";
 
 export function useCoachData(usuario, activo) {
   const [atletas, setAtletas] = useState([]);
+  const [pendientes, setPendientes] = useState([]);
+  const [revocados, setRevocados] = useState([]);
   const [pagos, setPagos] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [grupos, setGrupos] = useState([]);
   const [gruposDisponibles, setGruposDisponibles] = useState([]);
 
-  // Cargar lista de atletas
+  // Cargar lista de atletas ya aprobados (los pending/revoked no entran acá,
+  // así el panel "Atletas" no se mezcla con las solicitudes sin resolver)
   const cargarAtletas = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
       .select("*, groups(name)")
-      .eq("role", "athlete");
+      .eq("role", "athlete")
+      .eq("status", "approved");
     setAtletas(data || []);
+  }, []);
+
+  // Cargar atletas con registro pendiente de autorización
+  const cargarPendientes = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "athlete")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    setPendientes(data || []);
+  }, []);
+
+  // Cargar atletas con el acceso revocado — se necesita esta lista aparte
+  // porque quedan fuera tanto de "atletas" (solo approved) como de
+  // "pendientes" (solo pending), y si no, no habría forma de encontrarlos
+  // para reactivarlos si retoman la actividad más adelante.
+  const cargarRevocados = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "athlete")
+      .eq("status", "revoked")
+      .order("full_name", { ascending: true });
+    setRevocados(data || []);
   }, []);
 
   // Cargar pagos del mes actual (incluye monto, plan y método de pago usado)
@@ -57,6 +86,8 @@ export function useCoachData(usuario, activo) {
   useEffect(() => {
     if (activo && usuario) {
       cargarAtletas();
+      cargarPendientes();
+      cargarRevocados();
       cargarPagos();
       cargarPlanes();
       cargarGrupos();
@@ -66,11 +97,59 @@ export function useCoachData(usuario, activo) {
     activo,
     usuario,
     cargarAtletas,
+    cargarPendientes,
+    cargarRevocados,
     cargarPagos,
     cargarPlanes,
     cargarGrupos,
     cargarGruposDisponibles,
   ]);
+
+  // Aprobar el registro de un atleta: pasa a "approved" y se mueve de la
+  // lista de pendientes a la lista normal de atletas.
+  const aprobarAtleta = async (atletaId) => {
+    setPendientes((prev) => prev.filter((p) => p.id !== atletaId));
+    await supabase
+      .from("profiles")
+      .update({ status: "approved" })
+      .eq("id", atletaId);
+    await cargarAtletas();
+  };
+
+  // Rechazar una solicitud de registro (antes de aprobarla). Se marca como
+  // "revoked" en vez de borrar el perfil, para no perder el registro del
+  // intento ni romper la fila de auth.users asociada.
+  const rechazarAtleta = async (atletaId) => {
+    setPendientes((prev) => prev.filter((p) => p.id !== atletaId));
+    await supabase
+      .from("profiles")
+      .update({ status: "revoked" })
+      .eq("id", atletaId);
+    await cargarRevocados();
+  };
+
+  // Revocar el acceso de un atleta ya aprobado (dado de baja, etc.)
+  const revocarAtleta = async (atletaId) => {
+    setAtletas((prev) => prev.filter((a) => a.id !== atletaId));
+    await supabase
+      .from("profiles")
+      .update({ status: "revoked" })
+      .eq("id", atletaId);
+    await cargarRevocados();
+  };
+
+  // Reactivar a un atleta previamente revocado — por ejemplo, si vuelve a
+  // sumarse al gimnasio después de un tiempo. Su información (RMs, PRs,
+  // historial) queda intacta porque nunca se borró el perfil, solo se
+  // vuelve a habilitar el acceso.
+  const reactivarAtleta = async (atletaId) => {
+    setRevocados((prev) => prev.filter((r) => r.id !== atletaId));
+    await supabase
+      .from("profiles")
+      .update({ status: "approved" })
+      .eq("id", atletaId);
+    await cargarAtletas();
+  };
 
   // Verificar si un atleta pagó este mes
   const pagadoEsteMes = (atletaId) =>
@@ -181,6 +260,8 @@ export function useCoachData(usuario, activo) {
 
   return {
     atletas,
+    pendientes,
+    revocados,
     pagos,
     planes,
     grupos,
@@ -192,6 +273,10 @@ export function useCoachData(usuario, activo) {
     guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
+    aprobarAtleta,
+    rechazarAtleta,
+    revocarAtleta,
+    reactivarAtleta,
     cargarRMsAtleta: async (atletaId) => {
       const { data } = await supabase
         .from("rm_records")

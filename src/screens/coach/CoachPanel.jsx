@@ -1,5 +1,6 @@
 // ── PANTALLA: PANEL COACH ─────────────────────────────────────────────────────
 import CoachAtletas from "./CoachAtletas";
+import CoachSolicitudes from "./CoachSolicitudes";
 import CoachPagos from "./CoachPagos";
 import CoachGrupos from "./CoachGrupos";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
@@ -14,6 +15,8 @@ export default function CoachPanel({
 }) {
   const {
     atletas,
+    pendientes,
+    revocados,
     pagos,
     planes,
     grupos,
@@ -26,6 +29,10 @@ export default function CoachPanel({
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
     cargarRMsAtleta,
+    aprobarAtleta,
+    rechazarAtleta,
+    revocarAtleta,
+    reactivarAtleta,
   } = coachData;
 
   const alDia = atletas.filter((a) => pagadoEsteMes(a.id)).length;
@@ -96,10 +103,21 @@ export default function CoachPanel({
                 onGuardarDisciplina={guardarDisciplinaAtleta}
                 onAtletaActualizada={onAtletaActualizada}
                 onVolver={onVolverALista}
+                onRevocarAcceso={revocarAtleta}
               />
             </div>
           )}
         </div>
+      )}
+
+      {tabCoach === "solicitudes" && (
+        <CoachSolicitudes
+          pendientes={pendientes}
+          revocados={revocados}
+          onAprobar={aprobarAtleta}
+          onRechazar={rechazarAtleta}
+          onReactivar={reactivarAtleta}
+        />
       )}
 
       {tabCoach === "pagos" && (
