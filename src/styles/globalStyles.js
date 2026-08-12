@@ -99,6 +99,13 @@ export const globalStyles = `
   .view-detalle_atleta .coach-list-pane { display: none; }
   .view-detalle_atleta .coach-detail-pane { display: block; }
 
+  /* Tarjetas de acceso del Home (Tienda / App Atleta): apiladas en mobile,
+     lado a lado desde tablet/desktop en adelante. */
+  .home-accesos { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 480px) {
+    .home-accesos { grid-template-columns: 1fr 1fr; }
+  }
+
   /* ── DESKTOP (>= ${DESKTOP_BREAKPOINT_PX}px) ────────────────────────────── */
   @media (min-width: ${DESKTOP_BREAKPOINT_PX}px) {
     .app-shell {

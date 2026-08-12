@@ -1,5 +1,6 @@
 // ── PANTALLA: LOGIN / REGISTRO ────────────────────────────────────────────────
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import LogoRagnar from "../components/shared/LogoRagnar";
 import { Y } from "../lib/constants";
 
@@ -48,8 +49,28 @@ export default function LoginScreen({ onLogin, onRegistro }) {
       }}
     >
       <div style={{ width: "100%", maxWidth: 480, padding: "20px 20px 0" }}>
-        <div style={{ marginBottom: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
           <LogoRagnar />
+          <Link
+            to="/"
+            style={{
+              fontFamily: "'DM Mono',monospace",
+              fontSize: 10,
+              letterSpacing: 1,
+              color: "#7a7a7a",
+              textDecoration: "none",
+              textTransform: "uppercase",
+            }}
+          >
+            ← Volver al inicio
+          </Link>
         </div>
         <div
           style={{

@@ -4,6 +4,7 @@
 // vertical, contenido ocupando el resto del ancho disponible.
 // El cambio de layout es puro CSS (ver styles/globalStyles.js) para que responda
 // a cambios de tamaño de ventana sin recalcular en JS.
+import { Link } from "react-router-dom";
 import LogoRagnar from "../shared/LogoRagnar";
 import { Y } from "../../lib/constants";
 
@@ -72,6 +73,21 @@ export default function AppShell({
         >
           Salir
         </button>
+        <Link
+          to="/tienda"
+          style={{
+            marginTop: 10,
+            textAlign: "center",
+            fontFamily: "'DM Mono',monospace",
+            fontSize: 10,
+            letterSpacing: 2,
+            color: "#7a7a7a",
+            textDecoration: "none",
+            textTransform: "uppercase",
+          }}
+        >
+          Ver tienda
+        </Link>
       </aside>
 
       {/* CONTENIDO PRINCIPAL */}
@@ -89,9 +105,24 @@ export default function AppShell({
             <div style={{ cursor: "pointer" }} onClick={onLogoClick}>
               <LogoRagnar />
             </div>
-            <button className="btn-salir" onClick={onSalir}>
-              Salir
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Link
+                to="/tienda"
+                style={{
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  color: "#7a7a7a",
+                  textDecoration: "none",
+                  textTransform: "uppercase",
+                }}
+              >
+                Tienda
+              </Link>
+              <button className="btn-salir" onClick={onSalir}>
+                Salir
+              </button>
+            </div>
           </div>
           <div
             style={{

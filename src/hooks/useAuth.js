@@ -89,7 +89,7 @@ export function useAuth() {
         password,
         options: {
           data: { full_name: nombreCompleto },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/app`,
         },
       });
       if (error) return { error: error.message };

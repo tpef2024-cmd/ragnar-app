@@ -3,6 +3,7 @@ import { useAuth } from "./hooks/useAuth";
 import { useAthleteData } from "./hooks/useAthleteData";
 import { useAttendance } from "./hooks/useAttendance";
 import { useCoachData } from "./hooks/useCoachData";
+import { useTiendaCoach } from "./hooks/useTienda";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
@@ -29,6 +30,7 @@ const TABS_COACH = [
   ["solicitudes", "Solicitudes"],
   ["pagos", "Pagos"],
   ["grupos", "Grupos"],
+  ["tienda", "Tienda"],
 ];
 
 export default function App() {
@@ -46,6 +48,7 @@ export default function App() {
   const athleteDataRaw = useAthleteData(usuario, pantalla === "athlete");
   const attendanceData = useAttendance(usuario, pantalla === "athlete");
   const coachData = useCoachData(usuario, pantalla === "coach");
+  const tienda = useTiendaCoach(usuario, pantalla === "coach");
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
   const athleteData = {
@@ -206,6 +209,7 @@ export default function App() {
           <CoachPanel
             tabCoach={tabCoach}
             coachData={coachData}
+            tienda={tienda}
             atletaSeleccionado={atletaSeleccionado}
             onSeleccionarAtleta={handleSeleccionarAtleta}
             onVolverALista={handleVolverALista}

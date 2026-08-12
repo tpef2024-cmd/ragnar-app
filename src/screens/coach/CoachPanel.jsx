@@ -3,11 +3,13 @@ import CoachAtletas from "./CoachAtletas";
 import CoachSolicitudes from "./CoachSolicitudes";
 import CoachPagos from "./CoachPagos";
 import CoachGrupos from "./CoachGrupos";
+import CoachTienda from "./CoachTienda";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
 
 export default function CoachPanel({
   tabCoach,
   coachData,
+  tienda,
   atletaSeleccionado,
   onSeleccionarAtleta,
   onVolverALista,
@@ -139,6 +141,8 @@ export default function CoachPanel({
           pagadoEsteMes={pagadoEsteMes}
         />
       )}
+
+      {tabCoach === "tienda" && <CoachTienda tienda={tienda} />}
     </>
   );
 }
