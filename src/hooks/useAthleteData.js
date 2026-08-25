@@ -7,6 +7,7 @@ import { obtenerRMDeLista, tiempoASegundos } from "../lib/helpers";
 export function useAthleteData(usuario, activo) {
   const [registrosRM, setRegistrosRM] = useState([]);
   const [forTimes, setForTimes] = useState([]);
+  const [repsRecords, setRepsRecords] = useState([]);
   const [gruposDisponibles, setGruposDisponibles] = useState([]);
   const [logro, setLogro] = useState(null);
 
@@ -32,6 +33,17 @@ export function useAthleteData(usuario, activo) {
     setForTimes(data || []);
   }, [usuario]);
 
+  // Cargar Reps/AMRAP del atleta logueado
+  const cargarReps = useCallback(async () => {
+    if (!usuario) return;
+    const { data } = await supabase
+      .from("amrap_records")
+      .select("*")
+      .eq("athlete_id", usuario.id)
+      .order("recorded_at", { ascending: false });
+    setRepsRecords(data || []);
+  }, [usuario]);
+
   // Cargar todos los grupos disponibles (para mostrar el propio)
   const cargarGruposDisponibles = useCallback(async () => {
     const { data } = await supabase.from("groups").select("*").order("name");
@@ -42,9 +54,10 @@ export function useAthleteData(usuario, activo) {
     if (activo && usuario) {
       cargarRMs();
       cargarForTimes();
+      cargarReps();
       cargarGruposDisponibles();
     }
-  }, [activo, usuario, cargarRMs, cargarForTimes, cargarGruposDisponibles]);
+  }, [activo, usuario, cargarRMs, cargarForTimes, cargarReps, cargarGruposDisponibles]);
 
   // Función de carga de RM (guarda un nuevo registro y detecta si es récord)
   const guardarRM = async (movimiento, valorStr) => {
@@ -85,13 +98,33 @@ export function useAthleteData(usuario, activo) {
     return false;
   };
 
+  // Guardar nuevo registro de Reps/AMRAP
+  const guardarReps = async (ejercicio, timeCap, resultadoStr) => {
+    if (!ejercicio || !timeCap || !resultadoStr || isNaN(resultadoStr)) return false;
+    const resultado = parseFloat(resultadoStr);
+    const { error } = await supabase.from("amrap_records").insert({
+      athlete_id: usuario.id,
+      exercise: ejercicio,
+      time_cap: timeCap,
+      result: resultado,
+    });
+    if (!error) {
+      await cargarReps();
+      setLogro({ type: "reps", movement: `${ejercicio} (${timeCap})`, value: `${resultado} reps` });
+      return true;
+    }
+    return false;
+  };
+
   return {
     registrosRM,
     forTimes,
+    repsRecords,
     gruposDisponibles,
     logro,
     setLogro,
     guardarRM,
     guardarFT,
+    guardarReps,
   };
 }

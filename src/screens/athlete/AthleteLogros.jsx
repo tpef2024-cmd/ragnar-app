@@ -1,6 +1,6 @@
 // ── TAB: LOGROS (atleta) — lista de PRs compartibles ──────────────────────────
-import { MOVIMIENTOS, Y } from "../../lib/constants";
-import { obtenerRMDeLista, formatearTiempo } from "../../lib/helpers";
+import { Y } from "../../lib/constants";
+import { obtenerRMDeLista, formatearTiempo, movimientosDeDisciplina } from "../../lib/helpers";
 
 const estiloBotonCompartir = {
   background: "#1a1500",
@@ -15,12 +15,13 @@ const estiloBotonCompartir = {
   textTransform: "uppercase",
 };
 
-export default function AthleteLogros({ registrosRM, forTimes, onCompartir }) {
-  const sinLogros = registrosRM.length === 0 && forTimes.length === 0;
+export default function AthleteLogros({ registrosRM, forTimes, repsRecords = [], discipline, onCompartir }) {
+  const movimientos = movimientosDeDisciplina(discipline);
+  const sinLogros = registrosRM.length === 0 && forTimes.length === 0 && repsRecords.length === 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {MOVIMIENTOS.map((m) => {
+      {movimientos.map((m) => {
         const val = obtenerRMDeLista(registrosRM, m);
         if (!val) return null;
         return (
@@ -52,6 +53,26 @@ export default function AthleteLogros({ registrosRM, forTimes, onCompartir }) {
           <button
             style={estiloBotonCompartir}
             onClick={() => onCompartir({ type: "fortime", movement: ft.workout_name, value: formatearTiempo(ft.time_seconds) })}
+          >
+            📸 Compartir
+          </button>
+        </div>
+      ))}
+
+      {repsRecords.slice(0, 5).map((r) => (
+        <div key={r.id} className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: Y, letterSpacing: 2 }}>
+              {r.exercise} ({r.time_cap})
+            </div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 30, color: "#fff" }}>
+              {r.result}
+              <span style={{ fontSize: 13, color: "#999", marginLeft: 4 }}>reps</span>
+            </div>
+          </div>
+          <button
+            style={estiloBotonCompartir}
+            onClick={() => onCompartir({ type: "reps", movement: `${r.exercise} (${r.time_cap})`, value: `${r.result} reps` })}
           >
             📸 Compartir
           </button>

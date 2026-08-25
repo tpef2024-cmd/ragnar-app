@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export function useAuth() {
-  // "login" | "athlete" | "coach" | "pendiente" | "revocado"
+  // "login" | "athlete" | "coach" | "pendiente" | "revocado" | "recuperar_password"
   const [pantalla, setPantalla] = useState("login");
   const [usuario, setUsuario] = useState(null);
   const [perfil, setPerfil] = useState(null);
@@ -41,7 +41,18 @@ export function useAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_evento, session) => {
+    } = supabase.auth.onAuthStateChange((evento, session) => {
+      // Cuando alguien entra desde el link del mail de "restablecer
+      // contraseña", Supabase crea una sesión temporal y dispara este
+      // evento puntual — hay que interceptarlo ANTES de que caiga en el
+      // flujo normal de cargarUsuario(), o lo mandaría derecho a su panel
+      // sin darle la chance de poner la contraseña nueva primero.
+      if (evento === "PASSWORD_RECOVERY") {
+        setUsuario(session?.user || null);
+        setPantalla("recuperar_password");
+        setCargando(false);
+        return;
+      }
       if (session?.user) cargarUsuario(session.user);
       else {
         setUsuario(null);
@@ -116,6 +127,36 @@ export function useAuth() {
     await supabase.auth.signOut();
   }, []);
 
+  // Pedir el mail de recuperación de contraseña. El link que llega redirige
+  // a /app — desde ahí, onAuthStateChange detecta el evento PASSWORD_RECOVERY
+  // (ver arriba) y muestra la pantalla para poner la contraseña nueva.
+  const enviarRecuperacion = useCallback(async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/app`,
+    });
+    if (error) return { error: error.message };
+    return {
+      error: null,
+      mensaje:
+        "Te enviamos un email para restablecer tu contraseña. Revisá tu bandeja de entrada (y spam).",
+    };
+  }, []);
+
+  // Confirmar la contraseña nueva (pantalla "recuperar_password"). Al
+  // terminar, entra directo a su panel — no hace falta que vuelva a loguearse,
+  // porque la sesión temporal de recuperación ya es una sesión válida.
+  const actualizarPassword = useCallback(
+    async (nuevaPassword) => {
+      const { data, error } = await supabase.auth.updateUser({
+        password: nuevaPassword,
+      });
+      if (error) return { error: error.message };
+      if (data.user) await cargarUsuario(data.user);
+      return { error: null };
+    },
+    [cargarUsuario],
+  );
+
   return {
     pantalla,
     setPantalla,
@@ -126,5 +167,7 @@ export function useAuth() {
     login,
     registrar,
     logout,
+    enviarRecuperacion,
+    actualizarPassword,
   };
 }

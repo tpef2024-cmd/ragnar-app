@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App.jsx";
 import Home from "./screens/Home.jsx";
 import Tienda from "./screens/store/Tienda.jsx";
+import Promociones from "./screens/store/Promociones.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -15,6 +16,9 @@ createRoot(document.getElementById("root")).render(
 
         {/* Tienda pública — no requiere login */}
         <Route path="/tienda" element={<Tienda />} />
+
+        {/* Promociones — banner + productos destacados, no requiere login */}
+        <Route path="/promociones" element={<Promociones />} />
 
         {/* App de atletas/coach — todo lo que ya existía sigue viviendo acá
             adentro, con su propia navegación interna por estado (no por URL) */}

@@ -1,14 +1,34 @@
 // ── CONSTANTES GLOBALES ───────────────────────────────────────────────────────
 
-// Movimientos de RM disponibles para atletas de Crossfit
-export const MOVIMIENTOS = [
-  "Back Squat",
-  "Deadlift",
-  "Clean & Jerk",
-  "Snatch",
-  "Press",
-  "Bench Press",
-];
+// Movimientos de RM disponibles, según la disciplina del atleta.
+// "Adultos Mayores" y "Niños" quedan sin movimientos de RM por ahora — a
+// esas disciplinas no se les carga esta sección hasta que se defina qué
+// marcas tiene sentido pedirles.
+export const MOVIMIENTOS_POR_DISCIPLINA = {
+  Crossfit: [
+    "Deadlift",
+    "Back Squat",
+    "Front Squat",
+    "Clean and Split Jerk",
+    "Clean and Jerk",
+    "Bench Press",
+    "Push Press",
+    "Shoulder Press",
+    "Squat Clean",
+    "Power Clean",
+    "Snatch",
+    "Power Snatch",
+  ],
+  Funcional: [
+    "Goblet Squat",
+    "Bench Press DB",
+    "Deadlift KB",
+    "DB Snatch",
+    "Swing Ruso",
+  ],
+  "Adultos Mayores": [],
+  Niños: [],
+};
 
 export const PORCENTAJES = [50, 60, 70, 75, 80, 85, 90, 95, 100];
 export const DISCIPLINAS = [

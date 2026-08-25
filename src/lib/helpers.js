@@ -1,4 +1,16 @@
 // ── HELPERS GENERALES ─────────────────────────────────────────────────────────
+import { MOVIMIENTOS_POR_DISCIPLINA } from "./constants";
+
+// Devuelve la lista de movimientos de RM que corresponde a una disciplina.
+// Si el atleta todavía no tiene disciplina asignada (perfil nuevo, sin
+// asignar por el coach), se usa Crossfit como fallback para no dejarlo sin
+// nada — es mejor mostrar algo por defecto que romper la pantalla.
+export function movimientosDeDisciplina(discipline) {
+  if (discipline && discipline in MOVIMIENTOS_POR_DISCIPLINA) {
+    return MOVIMIENTOS_POR_DISCIPLINA[discipline];
+  }
+  return MOVIMIENTOS_POR_DISCIPLINA.Crossfit;
+}
 
 // Formatear segundos a "min:seg" (ej: 272 -> "4:32")
 export function formatearTiempo(segs) {

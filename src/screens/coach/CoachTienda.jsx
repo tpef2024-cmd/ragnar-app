@@ -196,6 +196,7 @@ function FilaProducto({
   producto,
   onAjustarStock,
   onAlternarActivo,
+  onAlternarPromo,
   onBorrar,
   onEditar,
   onSubirImagen,
@@ -268,6 +269,9 @@ function FilaProducto({
           {producto.name}{" "}
           {!producto.active && (
             <span style={{ color: "#f87171", fontSize: 9 }}>(pausado)</span>
+          )}
+          {producto.on_promo && (
+            <span style={{ color: Y, fontSize: 9 }}> ★ promo</span>
           )}
         </div>
         <div style={{ fontSize: 10, color: "#999" }}>
@@ -353,6 +357,22 @@ function FilaProducto({
           {producto.active ? "Pausar" : "Activar"}
         </button>
         <button
+          onClick={() => onAlternarPromo(producto.id, producto.on_promo)}
+          style={{
+            background: producto.on_promo ? "#1a1500" : "transparent",
+            border: `1px solid ${Y}`,
+            color: Y,
+            fontSize: 9,
+            padding: "6px 8px",
+            borderRadius: 2,
+            cursor: "pointer",
+            textTransform: "uppercase",
+            fontFamily: "'DM Mono',monospace",
+          }}
+        >
+          {producto.on_promo ? "★ En promo" : "Sumar a promo"}
+        </button>
+        <button
           onClick={() =>
             window.confirm(`¿Borrar "${producto.name}" definitivamente?`) &&
             onBorrar(producto.id)
@@ -384,6 +404,7 @@ export default function CoachTienda({ tienda }) {
     editarProducto,
     ajustarStock,
     alternarActivo,
+    alternarPromo,
     borrarProducto,
     subirImagen,
   } = tienda;
@@ -463,6 +484,7 @@ export default function CoachTienda({ tienda }) {
           producto={p}
           onAjustarStock={ajustarStock}
           onAlternarActivo={alternarActivo}
+          onAlternarPromo={alternarPromo}
           onBorrar={borrarProducto}
           onEditar={editarProducto}
           onSubirImagen={subirImagen}

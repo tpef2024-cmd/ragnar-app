@@ -4,8 +4,12 @@ import { Link } from "react-router-dom";
 import LogoRagnar from "../components/shared/LogoRagnar";
 import { Y } from "../lib/constants";
 
-export default function LoginScreen({ onLogin, onRegistro }) {
-  const [modoAuth, setModoAuth] = useState("login"); // "login" | "register"
+export default function LoginScreen({
+  onLogin,
+  onRegistro,
+  onEnviarRecuperacion,
+}) {
+  const [modoAuth, setModoAuth] = useState("login"); // "login" | "register" | "recuperar"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nombreRegistro, setNombreRegistro] = useState("");
@@ -21,6 +25,13 @@ export default function LoginScreen({ onLogin, onRegistro }) {
     if (modoAuth === "login") {
       const error = await onLogin(email, password);
       if (error) setErrorAuth(error);
+    } else if (modoAuth === "recuperar") {
+      const { error, mensaje } = await onEnviarRecuperacion(email);
+      if (error) setErrorAuth(error);
+      else if (mensaje) {
+        setMensajeInfo(mensaje);
+        setEmail("");
+      }
     } else {
       const { error, mensaje } = await onRegistro(
         email,
@@ -36,6 +47,12 @@ export default function LoginScreen({ onLogin, onRegistro }) {
       }
     }
     setGuardando(false);
+  };
+
+  const cambiarModo = (modo) => {
+    setModoAuth(modo);
+    setErrorAuth("");
+    setMensajeInfo("");
   };
 
   return (
@@ -98,12 +115,26 @@ export default function LoginScreen({ onLogin, onRegistro }) {
             <button
               key={k}
               className={`tab ${modoAuth === k ? "on" : ""}`}
-              onClick={() => setModoAuth(k)}
+              onClick={() => cambiarModo(k)}
             >
               {l}
             </button>
           ))}
         </div>
+
+        {modoAuth === "recuperar" && (
+          <div
+            style={{
+              fontSize: 11,
+              color: "#999",
+              lineHeight: 1.7,
+              marginBottom: 16,
+            }}
+          >
+            Ingresá tu email y te mandamos un link para poner una contraseña
+            nueva.
+          </div>
+        )}
 
         {modoAuth === "register" && (
           <input
@@ -121,13 +152,36 @@ export default function LoginScreen({ onLogin, onRegistro }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          className="inp"
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {modoAuth !== "recuperar" && (
+          <input
+            className="inp"
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        )}
+
+        {modoAuth === "login" && (
+          <div style={{ textAlign: "right", marginBottom: 10 }}>
+            <button
+              onClick={() => cambiarModo("recuperar")}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: "#7a7a7a",
+                fontFamily: "'DM Mono',monospace",
+                fontSize: 9,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+        )}
 
         {errorAuth && (
           <div
@@ -167,37 +221,61 @@ export default function LoginScreen({ onLogin, onRegistro }) {
               <span className="spin">◌</span>
             ) : modoAuth === "login" ? (
               "INGRESAR"
+            ) : modoAuth === "recuperar" ? (
+              "ENVIAR LINK"
             ) : (
               "CREAR CUENTA"
             )}
           </button>
         )}
 
-        <div
-          style={{
-            marginTop: 20,
-            padding: 14,
-            background: "#0c0c0c",
-            border: "1px solid #222",
-            borderRadius: 2,
-            fontSize: 10,
-            color: "#7a7a7a",
-          }}
-        >
-          <div
+        {modoAuth === "recuperar" && (
+          <button
+            onClick={() => cambiarModo("login")}
             style={{
-              letterSpacing: 3,
-              marginBottom: 6,
-              color: "#999",
+              display: "block",
+              margin: "12px auto 0",
+              background: "none",
+              border: "none",
+              color: "#7a7a7a",
+              fontFamily: "'DM Mono',monospace",
+              fontSize: 9,
+              letterSpacing: 1,
               textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
-            Primera vez
+            ← Volver a ingresar
+          </button>
+        )}
+
+        {modoAuth !== "recuperar" && (
+          <div
+            style={{
+              marginTop: 20,
+              padding: 14,
+              background: "#0c0c0c",
+              border: "1px solid #222",
+              borderRadius: 2,
+              fontSize: 10,
+              color: "#7a7a7a",
+            }}
+          >
+            <div
+              style={{
+                letterSpacing: 3,
+                marginBottom: 6,
+                color: "#999",
+                textTransform: "uppercase",
+              }}
+            >
+              Primera vez
+            </div>
+            Registrate con tu email y confirmá la cuenta desde el mail que te
+            enviamos. Después, el coach tiene que autorizar tu acceso antes de
+            que puedas ingresar.
           </div>
-          Registrate con tu email y confirmá la cuenta desde el mail que te
-          enviamos. Después, el coach tiene que autorizar tu acceso antes de que
-          puedas ingresar.
-        </div>
+        )}
       </div>
     </div>
   );

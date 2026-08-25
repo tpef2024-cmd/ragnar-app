@@ -4,12 +4,14 @@ import { useAthleteData } from "./hooks/useAthleteData";
 import { useAttendance } from "./hooks/useAttendance";
 import { useCoachData } from "./hooks/useCoachData";
 import { useTiendaCoach } from "./hooks/useTienda";
+import { usePromocionCoach } from "./hooks/usePromocion";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
 
 import LoginScreen from "./screens/LoginScreen";
 import EstadoCuentaScreen from "./screens/EstadoCuentaScreen";
+import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import AppShell from "./components/layout/AppShell";
 import AthletePanel from "./screens/athlete/AthletePanel";
 import CoachPanel from "./screens/coach/CoachPanel";
@@ -21,6 +23,7 @@ const TABS_ATLETA = [
   ["asistencia", "📷 Asistencia"],
   ["rm", "⚡ RMs"],
   ["fortime", "⏱ For Time"],
+  ["reps", "🔥 Reps"],
   ["logros", "🏆 Logros"],
   ["perfil", "👤 Perfil"],
 ];
@@ -31,11 +34,21 @@ const TABS_COACH = [
   ["pagos", "Pagos"],
   ["grupos", "Grupos"],
   ["tienda", "Tienda"],
+  ["promos", "Promos"],
 ];
 
 export default function App() {
-  const { pantalla, usuario, perfil, cargando, login, registrar, logout } =
-    useAuth();
+  const {
+    pantalla,
+    usuario,
+    perfil,
+    cargando,
+    login,
+    registrar,
+    logout,
+    enviarRecuperacion,
+    actualizarPassword,
+  } = useAuth();
 
   // ── ESTADOS DE NAVEGACIÓN ────────────────────────────────────────────────
   const [tabAtleta, setTabAtleta] = useState("resumen");
@@ -49,6 +62,7 @@ export default function App() {
   const attendanceData = useAttendance(usuario, pantalla === "athlete");
   const coachData = useCoachData(usuario, pantalla === "coach");
   const tienda = useTiendaCoach(usuario, pantalla === "coach");
+  const promociones = usePromocionCoach(usuario, pantalla === "coach");
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
   const athleteData = {
@@ -62,6 +76,16 @@ export default function App() {
     guardarFT: async (nombre, tiempo) => {
       setGuardando(true);
       const ok = await athleteDataRaw.guardarFT(nombre, tiempo);
+      setGuardando(false);
+      return ok;
+    },
+    guardarReps: async (ejercicio, timeCap, resultado) => {
+      setGuardando(true);
+      const ok = await athleteDataRaw.guardarReps(
+        ejercicio,
+        timeCap,
+        resultado,
+      );
       setGuardando(false);
       return ok;
     },
@@ -152,7 +176,21 @@ export default function App() {
     return (
       <>
         <style>{globalStyles}</style>
-        <LoginScreen onLogin={login} onRegistro={registrar} />
+        <LoginScreen
+          onLogin={login}
+          onRegistro={registrar}
+          onEnviarRecuperacion={enviarRecuperacion}
+        />
+      </>
+    );
+  }
+
+  // ── PANTALLA: RESTABLECER CONTRASEÑA (desde el link del mail) ────────────
+  if (pantalla === "recuperar_password") {
+    return (
+      <>
+        <style>{globalStyles}</style>
+        <ResetPasswordScreen onActualizarPassword={actualizarPassword} />
       </>
     );
   }
@@ -210,6 +248,7 @@ export default function App() {
             tabCoach={tabCoach}
             coachData={coachData}
             tienda={tienda}
+            promociones={promociones}
             atletaSeleccionado={atletaSeleccionado}
             onSeleccionarAtleta={handleSeleccionarAtleta}
             onVolverALista={handleVolverALista}

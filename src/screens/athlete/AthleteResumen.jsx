@@ -1,14 +1,25 @@
 // ── TAB: RESUMEN (atleta) ─────────────────────────────────────────────────────
-import { MOVIMIENTOS, Y, BORDER } from "../../lib/constants";
-import { obtenerRMDeLista } from "../../lib/helpers";
+import { Y, BORDER } from "../../lib/constants";
+import { obtenerRMDeLista, movimientosDeDisciplina } from "../../lib/helpers";
 
-export default function AthleteResumen({ registrosRM, onIrARM }) {
-  const hayRMs = MOVIMIENTOS.some((m) => obtenerRMDeLista(registrosRM, m));
+export default function AthleteResumen({ registrosRM, discipline, onIrARM }) {
+  const movimientos = movimientosDeDisciplina(discipline);
+  const hayRMs = movimientos.some((m) => obtenerRMDeLista(registrosRM, m));
+
+  if (movimientos.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "#444", fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 3 }}>
+        SIN MOVIMIENTOS DE RM
+        <br />
+        <span style={{ fontSize: 11, color: "#333" }}>Configurados para tu disciplina</span>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 16 }}>
-        {MOVIMIENTOS.map((m) => {
+        {movimientos.map((m) => {
           const val = obtenerRMDeLista(registrosRM, m);
           return (
             <div

@@ -1,23 +1,35 @@
 // ── TAB: RMs (atleta) — carga de 1RM y tabla de porcentajes ──────────────────
 import { useState } from "react";
-import { MOVIMIENTOS, PORCENTAJES, Y } from "../../lib/constants";
-import { obtenerRMDeLista } from "../../lib/helpers";
+import { PORCENTAJES, Y } from "../../lib/constants";
+import { obtenerRMDeLista, movimientosDeDisciplina } from "../../lib/helpers";
 
-export default function AthleteRM({ registrosRM, movSeleccionado, onCambiarMovimiento, onGuardarRM, guardando }) {
+export default function AthleteRM({ registrosRM, discipline, movSeleccionado, onCambiarMovimiento, onGuardarRM, guardando }) {
   const [nuevoRM, setNuevoRM] = useState("");
-  const rmActual = obtenerRMDeLista(registrosRM, movSeleccionado);
+  const movimientos = movimientosDeDisciplina(discipline);
+  // Si el movimiento seleccionado no pertenece a la disciplina del atleta
+  // (ej: quedó guardado de antes de asignarle disciplina), se usa el primero
+  // disponible en su lugar, sin depender de que el padre lo sincronice.
+  const seleccionEfectiva = movimientos.includes(movSeleccionado) ? movSeleccionado : movimientos[0];
+  const rmActual = obtenerRMDeLista(registrosRM, seleccionEfectiva);
 
-  // Función de guardado de RM — delega en el hook, limpia el input al terminar
   const handleGuardar = async () => {
-    const ok = await onGuardarRM(movSeleccionado, nuevoRM);
+    const ok = await onGuardarRM(seleccionEfectiva, nuevoRM);
     if (ok) setNuevoRM("");
   };
+
+  if (movimientos.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "#555", fontSize: 10, letterSpacing: 2 }}>
+        NO HAY MOVIMIENTOS DE RM CONFIGURADOS PARA TU DISCIPLINA
+      </div>
+    );
+  }
 
   return (
     <>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-        {MOVIMIENTOS.map((m) => (
-          <button key={m} className={`mov ${movSeleccionado === m ? "on" : ""}`} onClick={() => onCambiarMovimiento(m)}>
+        {movimientos.map((m) => (
+          <button key={m} className={`mov ${seleccionEfectiva === m ? "on" : ""}`} onClick={() => onCambiarMovimiento(m)}>
             {m}
           </button>
         ))}
@@ -26,7 +38,7 @@ export default function AthleteRM({ registrosRM, movSeleccionado, onCambiarMovim
       <div className="card" style={{ marginBottom: 12 }}>
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 9, letterSpacing: 3, color: "#999", textTransform: "uppercase", marginBottom: 2 }}>
-            1RM — {movSeleccionado}
+            1RM — {seleccionEfectiva}
           </div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 56, lineHeight: 1, color: rmActual ? Y : "#333" }}>
             {rmActual || "—"}
@@ -61,7 +73,7 @@ export default function AthleteRM({ registrosRM, movSeleccionado, onCambiarMovim
 
       <div className="card">
         <div style={{ fontSize: 9, letterSpacing: 3, color: "#999", textTransform: "uppercase", marginBottom: 10 }}>
-          {rmActual ? "Actualizar" : "Cargar"} RM — {movSeleccionado}
+          {rmActual ? "Actualizar" : "Cargar"} RM — {seleccionEfectiva}
         </div>
         <input className="inp" type="number" placeholder="kg" value={nuevoRM} onChange={(e) => setNuevoRM(e.target.value)} />
         <button className="btn-y" onClick={handleGuardar} disabled={guardando}>

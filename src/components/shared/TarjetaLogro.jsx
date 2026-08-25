@@ -94,7 +94,11 @@ export default function TarjetaLogro({ logro, nombreAtleta, onCerrar }) {
               marginBottom: 4,
             }}
           >
-            {logro.type === "rm" ? "NUEVO RÉCORD PERSONAL" : "NUEVO PR — FOR TIME"}
+            {logro.type === "rm"
+              ? "NUEVO RÉCORD PERSONAL"
+              : logro.type === "reps"
+                ? "NUEVO PR — REPS"
+                : "NUEVO PR — FOR TIME"}
           </div>
           <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: "#ccc" }}>
             {nombreAtleta}

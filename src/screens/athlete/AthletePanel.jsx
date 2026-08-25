@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import AthleteResumen from "./AthleteResumen";
 import AthleteRM from "./AthleteRM";
 import AthleteForTime from "./AthleteForTime";
+import AthleteReps from "./AthleteReps";
 import AthleteLogros from "./AthleteLogros";
 import AthletePerfil from "./AthletePerfil";
 
@@ -25,9 +26,11 @@ export default function AthletePanel({
   const {
     registrosRM,
     forTimes,
+    repsRecords,
     gruposDisponibles,
     guardarRM,
     guardarFT,
+    guardarReps,
     setLogro,
   } = athleteData;
   const { asistenciaHoy, historialAsistencia, registrarAsistencia } =
@@ -43,7 +46,7 @@ export default function AthletePanel({
         />
       )}
       {tabAtleta === "resumen" && (
-        <AthleteResumen registrosRM={registrosRM} onIrARM={onIrARM} />
+        <AthleteResumen registrosRM={registrosRM} discipline={perfil?.discipline} onIrARM={onIrARM} />
       )}
       {tabAtleta === "asistencia" && (
         <Suspense
@@ -70,6 +73,7 @@ export default function AthletePanel({
       {tabAtleta === "rm" && (
         <AthleteRM
           registrosRM={registrosRM}
+          discipline={perfil?.discipline}
           movSeleccionado={movSeleccionado}
           onCambiarMovimiento={onCambiarMovimiento}
           onGuardarRM={guardarRM}
@@ -83,10 +87,19 @@ export default function AthletePanel({
           guardando={guardando}
         />
       )}
+      {tabAtleta === "reps" && (
+        <AthleteReps
+          repsRecords={repsRecords}
+          onGuardarReps={guardarReps}
+          guardando={guardando}
+        />
+      )}
       {tabAtleta === "logros" && (
         <AthleteLogros
           registrosRM={registrosRM}
           forTimes={forTimes}
+          repsRecords={repsRecords}
+          discipline={perfil?.discipline}
           onCompartir={setLogro}
         />
       )}

@@ -1,13 +1,12 @@
 // ── VISTA: DETALLE DE ATLETA (coach) ──────────────────────────────────────────
 import { useState, useEffect } from "react";
 import {
-  MOVIMIENTOS,
   PORCENTAJES,
   DISCIPLINAS,
   Y,
   BORDER,
 } from "../../lib/constants";
-import { obtenerRMDeLista } from "../../lib/helpers";
+import { obtenerRMDeLista, movimientosDeDisciplina } from "../../lib/helpers";
 import SelectorGrupo from "../../components/shared/SelectorGrupo";
 
 export default function CoachDetalleAtleta({
@@ -36,7 +35,11 @@ export default function CoachDetalleAtleta({
   }, [atleta.id, cargarRMsAtleta]);
 
   const grupoActual = gruposDisponibles.find((g) => g.id === atleta.group_id);
-  const rmSeleccionado = obtenerRMDeLista(rmsAtleta, movAtleta);
+  const movimientos = movimientosDeDisciplina(atleta.discipline);
+  // Igual criterio que en la vista del propio atleta: si el movimiento
+  // guardado no pertenece a la disciplina actual, se usa el primero disponible.
+  const movAtletaEfectivo = movimientos.includes(movAtleta) ? movAtleta : movimientos[0];
+  const rmSeleccionado = obtenerRMDeLista(rmsAtleta, movAtletaEfectivo);
 
   // Guardar grupo — actualiza la base de datos y refleja el cambio en pantalla al instante
   const handleGuardarGrupo = async (grupoId) => {
@@ -244,6 +247,11 @@ export default function CoachDetalleAtleta({
       </div>
 
       {/* Grilla de RMs */}
+      {movimientos.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 24, color: "#555", fontSize: 10, letterSpacing: 2, marginBottom: 16 }}>
+          SIN MOVIMIENTOS DE RM CONFIGURADOS PARA ESTA DISCIPLINA
+        </div>
+      ) : (
       <div
         className="grid-2"
         style={{
@@ -253,7 +261,7 @@ export default function CoachDetalleAtleta({
           marginBottom: 16,
         }}
       >
-        {MOVIMIENTOS.map((m) => {
+        {movimientos.map((m) => {
           const val = obtenerRMDeLista(rmsAtleta, m);
           return (
             <div
@@ -261,7 +269,7 @@ export default function CoachDetalleAtleta({
               className="card"
               style={{
                 cursor: "pointer",
-                borderColor: movAtleta === m ? Y : BORDER,
+                borderColor: movAtletaEfectivo === m ? Y : BORDER,
               }}
               onClick={() => setMovAtleta(m)}
             >
@@ -282,7 +290,7 @@ export default function CoachDetalleAtleta({
                     fontFamily: "'Bebas Neue',sans-serif",
                     fontSize: 36,
                     lineHeight: 1,
-                    color: movAtleta === m ? Y : "#ddd",
+                    color: movAtletaEfectivo === m ? Y : "#ddd",
                   }}
                 >
                   {val}
@@ -305,6 +313,7 @@ export default function CoachDetalleAtleta({
           );
         })}
       </div>
+      )}
 
       {/* Porcentajes del movimiento seleccionado */}
       {rmSeleccionado && (
@@ -318,7 +327,7 @@ export default function CoachDetalleAtleta({
               marginBottom: 12,
             }}
           >
-            Porcentajes — {movAtleta}
+            Porcentajes — {movAtletaEfectivo}
           </div>
           {PORCENTAJES.map((p) => (
             <div key={p} className="fila-pct">

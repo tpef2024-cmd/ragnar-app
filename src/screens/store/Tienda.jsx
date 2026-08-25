@@ -5,120 +5,11 @@
 // de cobro online (Mercado Pago) queda para una etapa siguiente.
 import { Link } from "react-router-dom";
 import { useProductosPublicos } from "../../hooks/useTienda";
+import { usePromoActiva } from "../../hooks/usePromocion";
 import LogoRagnar from "../../components/shared/LogoRagnar";
+import TarjetaProducto from "../../components/store/TarjetaProducto";
 import { globalStyles } from "../../styles/globalStyles";
 import { Y } from "../../lib/constants";
-
-// Número de WhatsApp del gimnasio para consultas de compra — reemplazar por
-// el número real cuando lo tengan (formato: código de país + número, sin
-// espacios ni el signo +. Ej: "5491122334455").
-const WHATSAPP_GYM = "5492914683833";
-
-function mensajeWhatsapp(producto) {
-  const texto = `Hola! Quiero comprar: ${producto.name} ($${producto.price})`;
-  return `https://wa.me/${WHATSAPP_GYM}?text=${encodeURIComponent(texto)}`;
-}
-
-function TarjetaProducto({ producto }) {
-  const sinStock = producto.stock <= 0;
-
-  return (
-    <div
-      className="card"
-      style={{ display: "flex", flexDirection: "column", gap: 10 }}
-    >
-      <div
-        style={{
-          width: "100%",
-          aspectRatio: "1 / 1",
-          background: "#0c0c0c",
-          border: "1px solid #222",
-          borderRadius: 2,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {producto.image_url ? (
-          <img
-            src={producto.image_url}
-            alt={producto.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ) : (
-          <span
-            style={{
-              fontSize: 10,
-              color: "#444",
-              letterSpacing: 2,
-              textTransform: "uppercase",
-            }}
-          >
-            Sin imagen
-          </span>
-        )}
-      </div>
-
-      <div>
-        <div style={{ fontSize: 15, color: "#fff", marginBottom: 4 }}>
-          {producto.name}
-        </div>
-        {producto.description && (
-          <div
-            style={{
-              fontSize: 10,
-              color: "#999",
-              lineHeight: 1.5,
-              marginBottom: 8,
-            }}
-          >
-            {producto.description}
-          </div>
-        )}
-        <div
-          style={{
-            fontFamily: "'Bebas Neue',sans-serif",
-            fontSize: 24,
-            color: Y,
-            letterSpacing: 1,
-          }}
-        >
-          ${producto.price}
-        </div>
-      </div>
-
-      {sinStock ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "10px",
-            fontSize: 9,
-            letterSpacing: 2,
-            color: "#f87171",
-            textTransform: "uppercase",
-          }}
-        >
-          Sin stock
-        </div>
-      ) : (
-        <a
-          href={mensajeWhatsapp(producto)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-y"
-          style={{
-            textAlign: "center",
-            textDecoration: "none",
-            display: "block",
-          }}
-        >
-          Comprar
-        </a>
-      )}
-    </div>
-  );
-}
 
 // Agrupa la lista (ya viene ordenada por categoría desde el hook) en bloques
 // consecutivos por categoría, para poder renderizar un encabezado por grupo.
@@ -138,6 +29,7 @@ function agruparPorCategoria(productos) {
 
 export default function Tienda() {
   const { productos, cargando } = useProductosPublicos();
+  const { promo: promoActiva } = usePromoActiva();
   const grupos = agruparPorCategoria(productos);
 
   return (
@@ -213,24 +105,63 @@ export default function Tienda() {
       >
         <div
           style={{
-            fontFamily: "'Bebas Neue',sans-serif",
-            fontSize: 32,
-            letterSpacing: 3,
-            color: "#fff",
-            marginBottom: 4,
-          }}
-        >
-          TIENDA
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: "#999",
-            letterSpacing: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
             marginBottom: 28,
           }}
         >
-          Indumentaria y suplementos Ragnar Cross Training
+          <div>
+            <div
+              style={{
+                fontFamily: "'Bebas Neue',sans-serif",
+                fontSize: 32,
+                letterSpacing: 3,
+                color: "#fff",
+                marginBottom: 4,
+              }}
+            >
+              TIENDA
+            </div>
+            <div style={{ fontSize: 11, color: "#999", letterSpacing: 1 }}>
+              Indumentaria y suplementos Ragnar Cross Training
+            </div>
+          </div>
+
+          {promoActiva && (
+            <Link
+              to="/promociones"
+              style={{
+                display: "inline-block",
+                textDecoration: "none",
+                transform: "rotate(-4deg)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Bebas Neue',sans-serif",
+                  fontSize: 34,
+                  letterSpacing: 2,
+                  color: Y,
+                  lineHeight: 1,
+                  textShadow: `0 0 24px ${Y}55`,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ★ Promos!!
+              </div>
+              <div
+                style={{
+                  height: 3,
+                  background: Y,
+                  marginTop: 4,
+                  borderRadius: 2,
+                }}
+              />
+            </Link>
+          )}
         </div>
 
         {cargando && (

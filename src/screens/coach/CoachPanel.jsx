@@ -4,12 +4,14 @@ import CoachSolicitudes from "./CoachSolicitudes";
 import CoachPagos from "./CoachPagos";
 import CoachGrupos from "./CoachGrupos";
 import CoachTienda from "./CoachTienda";
+import CoachPromos from "./CoachPromos";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
 
 export default function CoachPanel({
   tabCoach,
   coachData,
   tienda,
+  promociones,
   atletaSeleccionado,
   onSeleccionarAtleta,
   onVolverALista,
@@ -143,6 +145,8 @@ export default function CoachPanel({
       )}
 
       {tabCoach === "tienda" && <CoachTienda tienda={tienda} />}
+
+      {tabCoach === "promos" && <CoachPromos promociones={promociones} />}
     </>
   );
 }

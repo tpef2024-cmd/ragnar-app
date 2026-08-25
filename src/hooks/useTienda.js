@@ -2,6 +2,7 @@
 // Carga de productos (pública) y funciones de gestión (solo coach).
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { comprimirImagen } from "../lib/imagen";
 
 // Orden de exhibición: agrupado por categoría (alfabético), y dentro de cada
 // categoría por nombre de producto (alfabético) — así el catálogo se navega
@@ -9,7 +10,7 @@ import { supabase } from "../lib/supabaseClient";
 // "Creatina", etc. Se aplica siempre sobre el estado en memoria, así no
 // importa qué operación lo haya modificado (alta, edición, ajuste de stock,
 // etc.) — el orden queda consistente en todo momento.
-function ordenarCatalogo(lista) {
+export function ordenarCatalogo(lista) {
   return [...lista].sort((a, b) => {
     const categoriaA = (a.category || "").toLowerCase();
     const categoriaB = (b.category || "").toLowerCase();
@@ -112,6 +113,17 @@ export function useTiendaCoach(usuario, activo) {
       .eq("id", id);
   };
 
+  // Sumar/sacar un producto de la vista de Promociones (independiente de
+  // estar activo/pausado — un producto puede estar activo en la tienda
+  // normal y a la vez destacado en Promociones).
+  const alternarPromo = async (id, enPromoActual) => {
+    const nuevoValor = !enPromoActual;
+    setProductosCrudo((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, on_promo: nuevoValor } : p)),
+    );
+    await supabase.from("products").update({ on_promo: nuevoValor }).eq("id", id);
+  };
+
   // Borrar un producto definitivamente
   const borrarProducto = async (id) => {
     setProductosCrudo((prev) => prev.filter((p) => p.id !== id));
@@ -119,15 +131,18 @@ export function useTiendaCoach(usuario, activo) {
   };
 
   // Subir una foto al bucket "product-images" y devolver su URL pública.
+  // Se comprime en el navegador antes de subir (ver src/lib/imagen.js) para
+  // que la tienda no quede lenta cargando fotos pesadas de celular.
   // El nombre de archivo se genera random para evitar choques entre fotos
   // con el mismo nombre subidas por distintos productos.
   const subirImagen = async (file) => {
-    const extension = file.name.split(".").pop();
+    const archivoFinal = await comprimirImagen(file);
+    const extension = archivoFinal.name.split(".").pop();
     const nombreArchivo = `${crypto.randomUUID()}.${extension}`;
 
     const { error: errorSubida } = await supabase.storage
       .from("product-images")
-      .upload(nombreArchivo, file, { cacheControl: "3600", upsert: false });
+      .upload(nombreArchivo, archivoFinal, { cacheControl: "3600", upsert: false });
 
     if (errorSubida) return { url: null, error: errorSubida };
 
@@ -150,6 +165,7 @@ export function useTiendaCoach(usuario, activo) {
     editarProducto,
     ajustarStock,
     alternarActivo,
+    alternarPromo,
     borrarProducto,
     subirImagen,
   };
