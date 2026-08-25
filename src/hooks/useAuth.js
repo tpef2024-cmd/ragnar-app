@@ -34,25 +34,40 @@ export function useAuth() {
 
   // Verificar sesión activa al cargar la app y escuchar cambios de sesión
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) cargarUsuario(session.user);
-      else setCargando(false);
-    });
+    // Si el link del mail de "restablecer contraseña" acaba de aterrizar
+    // acá, Supabase agrega "type=recovery" a la URL. Hay que detectarlo
+    // ANTES de dejar que el chequeo normal de sesión (getSession) decida
+    // rutear al usuario a su panel — sin este freno, la sesión temporal de
+    // recuperación se trataba como una sesión cualquiera y lo mandaba
+    // directo adentro, sin darle la chance de poner la contraseña nueva.
+    const esLinkDeRecuperacion = window.location.hash.includes("type=recovery");
+
+    if (esLinkDeRecuperacion) {
+      setPantalla("recuperar_password");
+      setCargando(false);
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) cargarUsuario(session.user);
+        else setCargando(false);
+      });
+    }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((evento, session) => {
-      // Cuando alguien entra desde el link del mail de "restablecer
-      // contraseña", Supabase crea una sesión temporal y dispara este
-      // evento puntual — hay que interceptarlo ANTES de que caiga en el
-      // flujo normal de cargarUsuario(), o lo mandaría derecho a su panel
-      // sin darle la chance de poner la contraseña nueva primero.
       if (evento === "PASSWORD_RECOVERY") {
         setUsuario(session?.user || null);
         setPantalla("recuperar_password");
         setCargando(false);
         return;
       }
+      // Mientras se está en medio del flujo de recuperación, ningún otro
+      // evento de sesión (ej: el refresh automático de la sesión temporal)
+      // debe sacar al usuario de la pantalla de "nueva contraseña" antes
+      // de que la confirme — eso es lo que se resuelve explícitamente en
+      // actualizarPassword(), no acá.
+      if (esLinkDeRecuperacion) return;
+
       if (session?.user) cargarUsuario(session.user);
       else {
         setUsuario(null);

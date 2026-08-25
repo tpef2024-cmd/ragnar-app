@@ -1,9 +1,10 @@
 // ── PANTALLA: HOME (inicio público) ───────────────────────────────────────────
 // Primera pantalla al entrar al dominio. Presenta el gimnasio (quiénes somos,
-// misión, contacto) y da acceso a los dos apartados: Tienda y App de Atleta.
+// misión, valores, contacto) y da acceso a los dos apartados: Tienda y App
+// de Atleta.
 //
-// TODO: los textos de "Quiénes somos", "Misión" y los datos de contacto son
-// placeholders — reemplazar con la info real que confirme el gimnasio.
+// TODO: dirección, email e Instagram siguen siendo placeholders — reemplazar
+// con la info real que confirme el gimnasio.
 import { Link } from "react-router-dom";
 import LogoRagnar from "../components/shared/LogoRagnar";
 import { globalStyles } from "../styles/globalStyles";
@@ -12,10 +13,30 @@ import { Y, BORDER } from "../lib/constants";
 const CONTACTO = {
   telefono: "+54 9 291 468-3833",
   whatsapp: "5492914683833",
-  email: "info@ragnarcrossfit.com", // TODO: confirmar email real del gimnasio
-  direccion: "Dirección del gimnasio", // TODO: completar
-  instagram: "@ragnarcrosstraining", // TODO: confirmar usuario real
+  email: "info@ragnarcrossfit.com",
+  direccion: "Avda. Moreno n° 350",
+  instagram: "@ragnar.cross2026",
+  instagramSuple: "@ragnar.suple",
 };
+
+const VALORES = [
+  {
+    titulo: "Comunidad",
+    texto: "Entrenamos juntos, nos acompañamos y celebramos el progreso de cada persona.",
+  },
+  {
+    titulo: "Progresión",
+    texto: "No buscamos resultados rápidos. Buscamos mejorar de manera constante y sostenible.",
+  },
+  {
+    titulo: "Exigencia",
+    texto: "Entrenamos con compromiso y seriedad, respetando el nivel y el proceso de cada atleta.",
+  },
+  {
+    titulo: "Inclusión",
+    texto: "Cada persona tiene un punto de partida diferente. El entrenamiento se adapta para que todos puedan progresar.",
+  },
+];
 
 function Seccion({ titulo, children }) {
   return (
@@ -75,6 +96,26 @@ function TarjetaAcceso({ to, titulo, descripcion }) {
         Entrar →
       </div>
     </Link>
+  );
+}
+
+function TarjetaValor({ titulo, texto }) {
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <div
+        style={{
+          fontFamily: "'Bebas Neue',sans-serif",
+          fontSize: 18,
+          letterSpacing: 2,
+          color: Y,
+          marginBottom: 8,
+          textTransform: "uppercase",
+        }}
+      >
+        {titulo}
+      </div>
+      <div style={{ fontSize: 12, color: "#ccc", lineHeight: 1.7 }}>{texto}</div>
+    </div>
   );
 }
 
@@ -173,20 +214,31 @@ export default function Home() {
       >
         <Seccion titulo="Quiénes somos">
           <p style={{ fontSize: 12, color: "#ccc", lineHeight: 1.9 }}>
-            Ragnar Cross Training es un gimnasio pensado para acompañar a cada
-            atleta en su proceso, sin importar el nivel o la edad. Combinamos
-            entrenamiento funcional y crossfit con un seguimiento cercano de
-            cada persona, en un ambiente de comunidad y esfuerzo compartido.
+            Ragnar Cross Training es una comunidad de entrenamiento donde cada
+            persona puede encontrar su propio desafío. Combinamos CrossFit,
+            entrenamiento funcional, Hybrid y levantamientos olímpicos para
+            acompañar distintos objetivos y niveles, desde quienes recién
+            comienzan hasta quienes buscan mejorar su rendimiento. Creemos en
+            entrenar con propósito, progresar de manera constante y disfrutar el
+            proceso junto a otros.
           </p>
         </Seccion>
 
         <Seccion titulo="Nuestra misión">
           <p style={{ fontSize: 12, color: "#ccc", lineHeight: 1.9 }}>
-            Ayudar a cada persona que entra al gimnasio a mejorar su salud, su
-            fuerza y su calidad de vida, con entrenamiento serio pero accesible
-            — para quienes recién arrancan, para deportistas, y para adultos
-            mayores que buscan moverse mejor cada día.
+            Ayudar a cada persona a ser más fuerte, moverse mejor y mejorar su
+            calidad de vida. Creamos entrenamientos serios, progresivos y
+            accesibles, adaptados a cada nivel y objetivo. Porque en Ragnar no
+            se trata solamente de entrenar más. Se trata de entrenar mejor.
           </p>
+        </Seccion>
+
+        <Seccion titulo="Nuestros valores">
+          <div className="valores-grid">
+            {VALORES.map((v) => (
+              <TarjetaValor key={v.titulo} titulo={v.titulo} texto={v.texto} />
+            ))}
+          </div>
         </Seccion>
 
         <Seccion titulo="Contacto">
@@ -216,8 +268,26 @@ export default function Home() {
               </a>
             </div>
             <div style={{ fontSize: 12, color: "#ccc" }}>
-              <span style={{ color: "#7a7a7a" }}>Instagram: </span>
-              {CONTACTO.instagram}
+              <span style={{ color: "#7a7a7a" }}>Instagram (Box): </span>
+              <a
+                href={`https://instagram.com/${CONTACTO.instagram.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: Y, textDecoration: "none" }}
+              >
+                {CONTACTO.instagram}
+              </a>
+            </div>
+            <div style={{ fontSize: 12, color: "#ccc" }}>
+              <span style={{ color: "#7a7a7a" }}>Instagram (Suplementos): </span>
+              <a
+                href={`https://instagram.com/${CONTACTO.instagramSuple.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: Y, textDecoration: "none" }}
+              >
+                {CONTACTO.instagramSuple}
+              </a>
             </div>
           </div>
         </Seccion>

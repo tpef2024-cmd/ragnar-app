@@ -106,6 +106,12 @@ export const globalStyles = `
     .home-accesos { grid-template-columns: 1fr 1fr; }
   }
 
+  /* Grilla de "Nuestros valores" en el Home: mismo criterio responsive. */
+  .valores-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 480px) {
+    .valores-grid { grid-template-columns: 1fr 1fr; }
+  }
+
   /* ── DESKTOP (>= ${DESKTOP_BREAKPOINT_PX}px) ────────────────────────────── */
   @media (min-width: ${DESKTOP_BREAKPOINT_PX}px) {
     .app-shell {
