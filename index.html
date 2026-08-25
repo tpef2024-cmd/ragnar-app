@@ -34,14 +34,32 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Registro del service worker para PWA -->
+    <!-- Registro del service worker para PWA.
+         Además de registrarlo, se escucha "controllerchange": ese evento se
+         dispara automáticamente apenas una versión nueva del Service Worker
+         toma el control de la página (nuestro sw.js ya hace skipWaiting() +
+         clients.claim() en cuanto detecta una versión nueva). Sin este
+         listener, la pestaña seguía usando en memoria el JS viejo aunque el
+         SW ya hubiera cambiado — por eso quedaba en pantalla negra hasta que
+         alguien limpiaba el caché a mano. Con esto, se recarga sola. -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
             .register("/sw.js")
-            .then((reg) => console.log("Service worker registrado:", reg.scope))
+            .then((reg) => {
+              console.log("Service worker registrado:", reg.scope);
+              // Forzar el chequeo de una versión nueva apenas carga la página
+              reg.update();
+            })
             .catch((err) => console.log("Error al registrar SW:", err));
+        });
+
+        let yaRecargando = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (yaRecargando) return;
+          yaRecargando = true;
+          window.location.reload();
         });
       }
     </script>
