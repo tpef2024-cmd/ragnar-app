@@ -22,19 +22,23 @@ const CONTACTO = {
 const VALORES = [
   {
     titulo: "Comunidad",
-    texto: "Entrenamos juntos, nos acompañamos y celebramos el progreso de cada persona.",
+    texto:
+      "Entrenamos juntos, nos acompañamos y celebramos el progreso de cada persona.",
   },
   {
     titulo: "Progresión",
-    texto: "No buscamos resultados rápidos. Buscamos mejorar de manera constante y sostenible.",
+    texto:
+      "No buscamos resultados rápidos. Buscamos mejorar de manera constante y sostenible.",
   },
   {
     titulo: "Exigencia",
-    texto: "Entrenamos con compromiso y seriedad, respetando el nivel y el proceso de cada atleta.",
+    texto:
+      "Entrenamos con compromiso y seriedad, respetando el nivel y el proceso de cada atleta.",
   },
   {
     titulo: "Inclusión",
-    texto: "Cada persona tiene un punto de partida diferente. El entrenamiento se adapta para que todos puedan progresar.",
+    texto:
+      "Cada persona tiene un punto de partida diferente. El entrenamiento se adapta para que todos puedan progresar.",
   },
 ];
 
@@ -114,7 +118,9 @@ function TarjetaValor({ titulo, texto }) {
       >
         {titulo}
       </div>
-      <div style={{ fontSize: 12, color: "#ccc", lineHeight: 1.7 }}>{texto}</div>
+      <div style={{ fontSize: 12, color: "#ccc", lineHeight: 1.7 }}>
+        {texto}
+      </div>
     </div>
   );
 }
@@ -279,7 +285,9 @@ export default function Home() {
               </a>
             </div>
             <div style={{ fontSize: 12, color: "#ccc" }}>
-              <span style={{ color: "#7a7a7a" }}>Instagram (Suplementos): </span>
+              <span style={{ color: "#7a7a7a" }}>
+                Instagram (Suplementos):{" "}
+              </span>
               <a
                 href={`https://instagram.com/${CONTACTO.instagramSuple.replace("@", "")}`}
                 target="_blank"
@@ -305,11 +313,19 @@ export default function Home() {
         <div style={{ fontSize: 9, color: "#555", letterSpacing: 1 }}>
           © {new Date().getFullYear()} Ragnar Cross Training
         </div>
-        {/* Crédito de desarrollo — sin link todavía, pendiente de confirmar con el gimnasio */}
+        {/* Crédito de desarrollo */}
         <div
           style={{ fontSize: 9, color: "#444", letterSpacing: 1, marginTop: 6 }}
         >
-          Desarrollado por [tu nombre / marca]
+          Desarrollado por{" "}
+          <a
+            href="https://muten-dev.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#444", textDecoration: "underline" }}
+          >
+            Muten Dev
+          </a>
         </div>
       </div>
     </div>
