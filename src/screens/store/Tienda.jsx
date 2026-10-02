@@ -1,13 +1,17 @@
 // ── PANTALLA: TIENDA PÚBLICA ──────────────────────────────────────────────────
 // Catálogo de productos visible SIN necesidad de estar logueado. Los atletas
 // (o cualquier visitante) pueden ver los productos y su stock disponible.
-// El botón "Comprar" abre WhatsApp con un mensaje prearmado — la integración
+// Los productos se suman a un carrito y desde ahí "Comprar por WhatsApp"
+// abre el chat del gimnasio con el pedido completo — la integración
 // de cobro online (Mercado Pago) queda para una etapa siguiente.
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useProductosPublicos } from "../../hooks/useTienda";
 import { usePromoActiva } from "../../hooks/usePromocion";
 import LogoRagnar from "../../components/shared/LogoRagnar";
 import TarjetaProducto from "../../components/store/TarjetaProducto";
+import Carrito from "../../components/store/Carrito";
+import { useCarrito } from "../../hooks/useCarrito";
 import { globalStyles } from "../../styles/globalStyles";
 import { Y } from "../../lib/constants";
 
@@ -31,6 +35,13 @@ export default function Tienda() {
   const { productos, cargando } = useProductosPublicos();
   const { promo: promoActiva } = usePromoActiva();
   const grupos = agruparPorCategoria(productos);
+  const { sincronizar } = useCarrito();
+
+  // Al cargar el catálogo, actualizar precios/stock de lo que ya estaba en el
+  // carrito y sacar lo que dejó de estar a la venta
+  useEffect(() => {
+    if (!cargando) sincronizar(productos, { completo: true });
+  }, [cargando, productos, sincronizar]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a" }}>
@@ -100,7 +111,7 @@ export default function Tienda() {
           width: "100%",
           maxWidth: 1100,
           margin: "0 auto",
-          padding: "36px 20px 60px",
+          padding: "36px 20px 110px",
         }}
       >
         <div
@@ -227,6 +238,7 @@ export default function Tienda() {
           </div>
         )}
       </div>
+      <Carrito />
     </div>
   );
 }
