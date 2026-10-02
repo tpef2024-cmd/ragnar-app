@@ -1,5 +1,13 @@
 // ── HELPERS GENERALES ─────────────────────────────────────────────────────────
-import { MOVIMIENTOS_POR_DISCIPLINA } from "./constants";
+import { MOVIMIENTOS_POR_DISCIPLINA, DISCIPLINAS_COBRO_PROFE } from "./constants";
+
+// ¿El usuario logueado puede ver/manejar el pago de este atleta?
+// Dueños: todos. Profes: solo atletas de Kids o Teens. (La base de datos
+// aplica la misma regla por RLS — esto es solo para no mostrar en pantalla
+// estados de pago que el profe no puede consultar.)
+export function puedeManejarPago(esDueno, atleta) {
+  return esDueno || DISCIPLINAS_COBRO_PROFE.includes(atleta?.discipline);
+}
 
 // Devuelve la lista de movimientos de RM que corresponde a una disciplina.
 // Si el atleta todavía no tiene disciplina asignada (perfil nuevo, sin

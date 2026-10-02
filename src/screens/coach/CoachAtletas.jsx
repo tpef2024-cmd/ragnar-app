@@ -1,14 +1,18 @@
 // ── TAB: ATLETAS (coach) ──────────────────────────────────────────────────────
 import { useState } from "react";
-import { DISCIPLINAS } from "../../lib/constants";
+import { DISCIPLINAS, HYBRID, Y } from "../../lib/constants";
 
-export default function CoachAtletas({ atletas, pagadoEsteMes, onSeleccionarAtleta }) {
+export default function CoachAtletas({ atletas, pagadoEsteMes, verPago = () => true, onSeleccionarAtleta }) {
   const [busqueda, setBusqueda] = useState("");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
 
   const atletasFiltrados = atletas.filter((a) => {
     const coincideNombre = a.full_name?.toLowerCase().includes(busqueda.toLowerCase());
-    const coincideDisciplina = filtroDisciplina === "todas" || a.discipline === filtroDisciplina;
+    // Hybrid es complementaria: el filtro muestra a todos los que la tienen,
+    // sea cual sea su disciplina principal
+    const coincideDisciplina =
+      filtroDisciplina === "todas" ||
+      (filtroDisciplina === HYBRID ? a.is_hybrid : a.discipline === filtroDisciplina);
     return coincideNombre && coincideDisciplina;
   });
 
@@ -20,7 +24,7 @@ export default function CoachAtletas({ atletas, pagadoEsteMes, onSeleccionarAtle
         <button className={`chip-disc ${filtroDisciplina === "todas" ? "on" : ""}`} onClick={() => setFiltroDisciplina("todas")}>
           Todas
         </button>
-        {DISCIPLINAS.map((d) => (
+        {[...DISCIPLINAS, HYBRID].map((d) => (
           <button key={d} className={`chip-disc ${filtroDisciplina === d ? "on" : ""}`} onClick={() => setFiltroDisciplina(d)}>
             {d}
           </button>
@@ -40,6 +44,7 @@ export default function CoachAtletas({ atletas, pagadoEsteMes, onSeleccionarAtle
             <div style={{ fontSize: 9, color: "#7a7a7a", letterSpacing: 1 }}>
               {a.groups?.name || "Sin grupo"}
               {a.discipline && <span style={{ color: "#999", marginLeft: 6 }}>· {a.discipline}</span>}
+              {a.is_hybrid && <span style={{ color: Y, marginLeft: 6 }}>+ {HYBRID}</span>}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -60,9 +65,11 @@ export default function CoachAtletas({ atletas, pagadoEsteMes, onSeleccionarAtle
             >
               Ver atleta
             </button>
-            <span className={pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"}>
-              {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
-            </span>
+            {verPago(a) && (
+              <span className={pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"}>
+                {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
+              </span>
+            )}
           </div>
         </div>
       ))}

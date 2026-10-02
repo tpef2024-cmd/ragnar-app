@@ -1,13 +1,41 @@
 // ── HOOK: DATOS DEL COACH ──────────────────────────────────────────────────────
 // Carga y guarda atletas, pagos, planes de cuota y grupos para el panel de coach.
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
+
+// Mes y año actuales ({ mes: 1-12, anio }) según el reloj del dispositivo
+const periodoActual = () => {
+  const d = new Date();
+  return { mes: d.getMonth() + 1, anio: d.getFullYear() };
+};
+
+const esMismoPeriodo = (a, b) => a.mes === b.mes && a.anio === b.anio;
+
+// Trae los pagos "paid" de un mes/año puntual. Devuelve null si hubo error.
+const consultarPagos = async ({ mes, anio }) => {
+  const { data, error } = await supabase
+    .from("payments")
+    .select(
+      "athlete_id, status, amount, plan_id, payment_method, period_month, period_year",
+    )
+    .eq("period_month", mes)
+    .eq("period_year", anio)
+    .eq("status", "paid");
+  return error ? null : data || [];
+};
 
 export function useCoachData(usuario, activo) {
   const [atletas, setAtletas] = useState([]);
   const [pendientes, setPendientes] = useState([]);
   const [revocados, setRevocados] = useState([]);
+  // `pagos` = siempre el mes ACTUAL (lo usan las estadísticas, Atletas y
+  // Grupos para el badge AL DÍA / DEBE).
+  // `pagosPeriodo` = el mes elegido en la tab Pagos, que puede ser uno
+  // anterior (para cobrar una cuota atrasada) o el siguiente (adelantada).
   const [pagos, setPagos] = useState([]);
+  const [periodoPagos, setPeriodoPagos] = useState(periodoActual);
+  const [pagosPeriodo, setPagosPeriodo] = useState([]);
+  const ultimaConsultaPeriodo = useRef(0);
   const [planes, setPlanes] = useState([]);
   const [grupos, setGrupos] = useState([]);
   const [gruposDisponibles, setGruposDisponibles] = useState([]);
@@ -48,18 +76,20 @@ export function useCoachData(usuario, activo) {
     setRevocados(data || []);
   }, []);
 
-  // Cargar pagos del mes actual (incluye monto, plan y método de pago usado)
+  // Cargar pagos del mes actual. No hace falta ningún "reset" mensual: como
+  // cada pago guarda su mes/año, el día 1 esta consulta pasa a buscar el mes
+  // nuevo, no encuentra pagos y todos arrancan como "deben".
   const cargarPagos = useCallback(async () => {
-    const ahora = new Date();
-    const { data, error } = await supabase
-      .from("payments")
-      .select(
-        "athlete_id, status, amount, plan_id, payment_method, period_month, period_year",
-      )
-      .eq("period_month", ahora.getMonth() + 1)
-      .eq("period_year", ahora.getFullYear())
-      .eq("status", "paid");
-    if (!error) setPagos(data || []);
+    const data = await consultarPagos(periodoActual());
+    if (data) setPagos(data);
+  }, []);
+
+  // Cargar pagos del mes elegido en la tab Pagos. El contador evita que, si
+  // el coach cambia de mes rápido, una respuesta vieja pise a la más nueva.
+  const cargarPagosPeriodo = useCallback(async (periodo) => {
+    const nro = ++ultimaConsultaPeriodo.current;
+    const data = await consultarPagos(periodo);
+    if (data && nro === ultimaConsultaPeriodo.current) setPagosPeriodo(data);
   }, []);
 
   // Cargar los combos de cuota con sus precios
@@ -104,6 +134,11 @@ export function useCoachData(usuario, activo) {
     cargarGrupos,
     cargarGruposDisponibles,
   ]);
+
+  // Recargar los pagos de la tab Pagos cada vez que se cambia de mes
+  useEffect(() => {
+    if (activo && usuario) cargarPagosPeriodo(periodoPagos);
+  }, [activo, usuario, periodoPagos, cargarPagosPeriodo]);
 
   // Aprobar el registro de un atleta: pasa a "approved" y se mueve de la
   // lista de pendientes a la lista normal de atletas.
@@ -161,66 +196,75 @@ export function useCoachData(usuario, activo) {
     0,
   );
 
+  // Verificar si un atleta pagó el mes elegido en la tab Pagos
+  const pagadoEnPeriodo = (atletaId) =>
+    pagosPeriodo.some((p) => p.athlete_id === atletaId && p.status === "paid");
+
+  // Total de ingresos del mes elegido en la tab Pagos
+  const ingresosPeriodo = pagosPeriodo.reduce(
+    (total, p) => total + (Number(p.amount) || 0),
+    0,
+  );
+
   // Función de cobro de cuota — acepta un combo (planId + método de pago) o un
-  // monto libre tipeado por el coach. Evita duplicar el pago del mes para el
-  // mismo atleta.
+  // monto libre tipeado por el coach. El pago se imputa al mes elegido en la
+  // tab Pagos (no al mes en que se cobra), así una cuota de septiembre cobrada
+  // el 3 de octubre queda registrada como septiembre. Evita duplicar el pago
+  // del mismo mes para el mismo atleta (además del índice único en la base).
   const cobrarCuota = async (
     atletaId,
     { planId = null, monto, metodo = null },
   ) => {
-    const ahora = new Date();
-    const yaPago = pagos.some(
-      (p) => p.athlete_id === atletaId && p.status === "paid",
-    );
-    if (yaPago) return;
+    const periodo = periodoPagos;
+    if (pagadoEnPeriodo(atletaId)) return;
 
     const montoFinal = Number(monto) || 0;
-
-    // Actualizar estado local inmediatamente para feedback visual
-    setPagos((prev) => [
-      ...prev,
-      {
-        athlete_id: atletaId,
-        status: "paid",
-        amount: montoFinal,
-        plan_id: planId,
-        payment_method: metodo,
-        period_month: ahora.getMonth() + 1,
-        period_year: ahora.getFullYear(),
-      },
-    ]);
-
-    await supabase.from("payments").insert({
+    const nuevoPago = {
       athlete_id: atletaId,
+      status: "paid",
       amount: montoFinal,
       plan_id: planId,
       payment_method: metodo,
-      period_month: ahora.getMonth() + 1,
-      period_year: ahora.getFullYear(),
+      period_month: periodo.mes,
+      period_year: periodo.anio,
+    };
+
+    // Actualizar estado local inmediatamente para feedback visual
+    setPagosPeriodo((prev) => [...prev, nuevoPago]);
+    if (esMismoPeriodo(periodo, periodoActual())) {
+      setPagos((prev) => [...prev, nuevoPago]);
+    }
+
+    await supabase.from("payments").insert({
+      ...nuevoPago,
       method: "manual",
-      status: "paid",
       registered_by: usuario.id,
     });
 
-    await cargarPagos();
-    await cargarAtletas();
+    // Recargar desde la base: si el insert falló (ej. pago duplicado), la
+    // pantalla vuelve a mostrar el estado real
+    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodo)]);
   };
 
-  // Revertir un pago del mes (por si el coach se confunde al cobrar)
+  // Revertir el pago de un atleta en el mes elegido (por si el coach se
+  // confunde al cobrar)
   const revertirPago = async (atletaId) => {
-    const ahora = new Date();
+    const periodo = periodoPagos;
     // Quitar del estado local al instante
-    setPagos((prev) => prev.filter((p) => p.athlete_id !== atletaId));
+    setPagosPeriodo((prev) => prev.filter((p) => p.athlete_id !== atletaId));
+    if (esMismoPeriodo(periodo, periodoActual())) {
+      setPagos((prev) => prev.filter((p) => p.athlete_id !== atletaId));
+    }
 
     await supabase
       .from("payments")
       .delete()
       .eq("athlete_id", atletaId)
       .eq("status", "paid")
-      .eq("period_month", ahora.getMonth() + 1)
-      .eq("period_year", ahora.getFullYear());
+      .eq("period_month", periodo.mes)
+      .eq("period_year", periodo.anio);
 
-    await cargarPagos();
+    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodo)]);
   };
 
   // Guardar/actualizar el precio de un combo — campo es "price_efectivo" o "price_transferencia"
@@ -258,6 +302,15 @@ export function useCoachData(usuario, activo) {
     await cargarAtletas();
   };
 
+  // Marcar / desmarcar Hybrid (complementaria a la disciplina principal)
+  const guardarHybridAtleta = async (atletaId, valor) => {
+    await supabase
+      .from("profiles")
+      .update({ is_hybrid: valor })
+      .eq("id", atletaId);
+    await cargarAtletas();
+  };
+
   return {
     atletas,
     pendientes,
@@ -268,11 +321,17 @@ export function useCoachData(usuario, activo) {
     gruposDisponibles,
     pagadoEsteMes,
     ingresosDelMes,
+    periodoPagos,
+    setPeriodoPagos,
+    pagosPeriodo,
+    pagadoEnPeriodo,
+    ingresosPeriodo,
     cobrarCuota,
     revertirPago,
     guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
+    guardarHybridAtleta,
     aprobarAtleta,
     rechazarAtleta,
     revocarAtleta,

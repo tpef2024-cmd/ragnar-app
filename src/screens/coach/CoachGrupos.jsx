@@ -1,7 +1,7 @@
 // ── TAB: GRUPOS (coach) ───────────────────────────────────────────────────────
 import { Y } from "../../lib/constants";
 
-export default function CoachGrupos({ grupos, atletas, pagadoEsteMes }) {
+export default function CoachGrupos({ grupos, atletas, pagadoEsteMes, verPago = () => true }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {grupos.length === 0 && (
@@ -22,9 +22,11 @@ export default function CoachGrupos({ grupos, atletas, pagadoEsteMes }) {
             {miembros.map((a) => (
               <div key={a.id} style={{ fontSize: 11, color: "#ccc", padding: "4px 0", borderBottom: "1px solid #1e1e1e", display: "flex", justifyContent: "space-between" }}>
                 {a.full_name}
-                <span className={pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"}>
-                  {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
-                </span>
+                {verPago(a) && (
+                  <span className={pagadoEsteMes(a.id) ? "badge-ok" : "badge-no"}>
+                    {pagadoEsteMes(a.id) ? "AL DÍA" : "DEBE"}
+                  </span>
+                )}
               </div>
             ))}
           </div>

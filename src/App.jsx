@@ -28,6 +28,9 @@ const TABS_ATLETA = [
   ["perfil", "👤 Perfil"],
 ];
 
+// Tabs que ve un profe (coach sin is_owner). El dueño ve TABS_COACH completo.
+const TABS_PROFE = ["atletas", "pagos", "grupos"];
+
 const TABS_COACH = [
   ["atletas", "Atletas"],
   ["solicitudes", "Solicitudes"],
@@ -60,9 +63,14 @@ export default function App() {
   // ── DATOS ─────────────────────────────────────────────────────────────────
   const athleteDataRaw = useAthleteData(usuario, pantalla === "athlete");
   const attendanceData = useAttendance(usuario, pantalla === "athlete");
+  // Dueño = coach con is_owner. Los profes no cargan tienda ni promos.
+  const esDueno = pantalla === "coach" && !!perfil?.is_owner;
   const coachData = useCoachData(usuario, pantalla === "coach");
-  const tienda = useTiendaCoach(usuario, pantalla === "coach");
-  const promociones = usePromocionCoach(usuario, pantalla === "coach");
+  const tienda = useTiendaCoach(usuario, esDueno);
+  const promociones = usePromocionCoach(usuario, esDueno);
+  const tabsCoach = esDueno
+    ? TABS_COACH
+    : TABS_COACH.filter(([key]) => TABS_PROFE.includes(key));
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
   const athleteData = {
@@ -210,9 +218,9 @@ export default function App() {
     <>
       <style>{globalStyles}</style>
       <AppShell
-        rolLabel={pantalla === "athlete" ? "Atleta" : "Coach"}
+        rolLabel={pantalla === "athlete" ? "Atleta" : esDueno ? "Dueño" : "Coach"}
         nombreUsuario={perfil?.full_name || usuario?.email || "Admin"}
-        tabs={pantalla === "athlete" ? TABS_ATLETA : TABS_COACH}
+        tabs={pantalla === "athlete" ? TABS_ATLETA : tabsCoach}
         tabActivo={
           pantalla === "athlete"
             ? tabAtleta
@@ -224,7 +232,7 @@ export default function App() {
         onLogoClick={handleLogoClick}
         onSalir={logout}
         badges={
-          pantalla === "coach" && coachData.pendientes.length > 0
+          esDueno && coachData.pendientes.length > 0
             ? { solicitudes: coachData.pendientes.length }
             : {}
         }
@@ -253,6 +261,7 @@ export default function App() {
             onSeleccionarAtleta={handleSeleccionarAtleta}
             onVolverALista={handleVolverALista}
             onAtletaActualizada={handleAtletaActualizada}
+            esDueno={esDueno}
           />
         )}
       </AppShell>

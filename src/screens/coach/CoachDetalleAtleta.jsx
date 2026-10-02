@@ -9,6 +9,21 @@ import {
 import { obtenerRMDeLista, movimientosDeDisciplina } from "../../lib/helpers";
 import SelectorGrupo from "../../components/shared/SelectorGrupo";
 
+// Chip de disciplina: resaltado si está seleccionada, clickeable solo si el
+// usuario puede editar (dueño)
+const estiloChip = (seleccionado, editable) => ({
+  padding: "8px 14px",
+  background: seleccionado ? "#1a1500" : "#151515",
+  border: `1px solid ${seleccionado ? Y : "#3a3a3a"}`,
+  color: seleccionado ? Y : "#999",
+  fontFamily: "'DM Mono',monospace",
+  fontSize: 10,
+  letterSpacing: 1,
+  borderRadius: 2,
+  cursor: editable ? "pointer" : "default",
+  textTransform: "uppercase",
+});
+
 export default function CoachDetalleAtleta({
   atleta,
   gruposDisponibles,
@@ -18,6 +33,8 @@ export default function CoachDetalleAtleta({
   onAtletaActualizada,
   onVolver,
   onRevocarAcceso,
+  onGuardarHybrid,
+  esDueno = false, // los profes ven el detalle en modo solo lectura
 }) {
   const [rmsAtleta, setRmsAtleta] = useState([]);
   const [movAtleta, setMovAtleta] = useState("Back Squat");
@@ -52,6 +69,13 @@ export default function CoachDetalleAtleta({
   const handleGuardarDisciplina = async (disciplina) => {
     await onGuardarDisciplina(atleta.id, disciplina);
     onAtletaActualizada({ discipline: disciplina });
+  };
+
+  // Marcar / desmarcar Hybrid (complementaria: no reemplaza la disciplina)
+  const handleToggleHybrid = async () => {
+    const nuevoValor = !atleta.is_hybrid;
+    await onGuardarHybrid(atleta.id, nuevoValor);
+    onAtletaActualizada({ is_hybrid: nuevoValor });
   };
 
   // Revocar el acceso del atleta — pide confirmación porque bloquea su login
@@ -114,6 +138,7 @@ export default function CoachDetalleAtleta({
           </div>
         </div>
 
+        {esDueno && (
         <button
           onClick={handleRevocarAcceso}
           style={{
@@ -133,6 +158,7 @@ export default function CoachDetalleAtleta({
         >
           Revocar acceso
         </button>
+        )}
       </div>
 
       {/* Asignación de grupo */}
@@ -181,6 +207,7 @@ export default function CoachDetalleAtleta({
                 </div>
               )}
             </div>
+            {esDueno && (
             <button
               onClick={() => setAsignandoGrupo(true)}
               style={{
@@ -198,6 +225,7 @@ export default function CoachDetalleAtleta({
             >
               {atleta.group_id ? "Cambiar" : "Asignar"}
             </button>
+            )}
           </div>
         ) : (
           <SelectorGrupo
@@ -222,28 +250,47 @@ export default function CoachDetalleAtleta({
           Disciplina
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {DISCIPLINAS.map((d) => (
+          {/* El dueño ve todas las opciones para asignar; el profe solo la actual */}
+          {(esDueno ? DISCIPLINAS : [atleta.discipline].filter(Boolean)).map((d) => (
             <button
               key={d}
-              onClick={() => handleGuardarDisciplina(d)}
-              style={{
-                padding: "8px 14px",
-                background: atleta.discipline === d ? "#1a1500" : "#151515",
-                border: `1px solid ${atleta.discipline === d ? Y : "#3a3a3a"}`,
-                color: atleta.discipline === d ? Y : "#999",
-                fontFamily: "'DM Mono',monospace",
-                fontSize: 10,
-                letterSpacing: 1,
-                borderRadius: 2,
-                cursor: "pointer",
-                textTransform: "uppercase",
-              }}
+              onClick={esDueno ? () => handleGuardarDisciplina(d) : undefined}
+              style={estiloChip(atleta.discipline === d, esDueno)}
             >
-              {atleta.discipline === d ? "✓ " : ""}
+              {atleta.discipline === d && esDueno ? "✓ " : ""}
               {d}
             </button>
           ))}
+          {!esDueno && !atleta.discipline && (
+            <div style={{ fontSize: 10, color: "#f87171", letterSpacing: 1 }}>
+              Sin disciplina asignada
+            </div>
+          )}
         </div>
+
+        {/* Hybrid — complementaria, convive con la disciplina principal */}
+        {(esDueno || atleta.is_hybrid) && (
+          <>
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: 3,
+                color: "#999",
+                textTransform: "uppercase",
+                margin: "14px 0 10px",
+              }}
+            >
+              Complementaria
+            </div>
+            <button
+              onClick={esDueno ? handleToggleHybrid : undefined}
+              style={estiloChip(!!atleta.is_hybrid, esDueno)}
+            >
+              {atleta.is_hybrid && esDueno ? "✓ " : ""}
+              Hybrid
+            </button>
+          </>
+        )}
       </div>
 
       {/* Grilla de RMs */}
