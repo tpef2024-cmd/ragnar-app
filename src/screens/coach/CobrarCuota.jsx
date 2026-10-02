@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Y } from "../../lib/constants";
 
-export default function CobrarCuota({ planes, onConfirmar, onCancelar }) {
+export default function CobrarCuota({ planes, periodoTexto, onConfirmar, onCancelar }) {
   const [metodo, setMetodo] = useState("efectivo"); // "efectivo" | "transferencia"
   const [planId, setPlanId] = useState(null);
   const [montoLibre, setMontoLibre] = useState("");
@@ -37,7 +37,7 @@ export default function CobrarCuota({ planes, onConfirmar, onCancelar }) {
           marginBottom: 10,
         }}
       >
-        Cobrar cuota
+        Cobrar cuota{periodoTexto ? ` — ${periodoTexto}` : ""}
       </div>
 
       {/* Método de pago — determina qué precio de combo se muestra */}

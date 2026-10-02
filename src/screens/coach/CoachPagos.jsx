@@ -4,15 +4,47 @@ import CoachPlanes from "./CoachPlanes";
 import CobrarCuota from "./CobrarCuota";
 import { Y } from "../../lib/constants";
 
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+// Mueve un período { mes, anio } n meses (negativo = hacia atrás)
+const moverPeriodo = ({ mes, anio }, n) => {
+  const total = anio * 12 + (mes - 1) + n;
+  return { mes: (total % 12) + 1, anio: Math.floor(total / 12) };
+};
+
+// Diferencia en meses entre un período y el mes actual (0 = mes actual)
+const mesesDesdeHoy = ({ mes, anio }) => {
+  const hoy = new Date();
+  return anio * 12 + (mes - 1) - (hoy.getFullYear() * 12 + hoy.getMonth());
+};
+
+const estiloFlecha = (habilitada) => ({
+  background: "transparent",
+  border: "1px solid #3a3a3a",
+  color: habilitada ? "#ddd" : "#333",
+  fontFamily: "'DM Mono',monospace",
+  fontSize: 14,
+  width: 36,
+  height: 36,
+  borderRadius: 2,
+  cursor: habilitada ? "pointer" : "default",
+});
+
 export default function CoachPagos({
   atletas,
   pagos,
   planes,
-  pagadoEsteMes,
-  ingresosDelMes,
+  periodo,
+  onCambiarPeriodo,
+  pagadoEnPeriodo,
+  ingresosPeriodo,
   onCobrarCuota,
   onRevertirPago,
   onGuardarPrecioPlan,
+  esDueno = false, // los profes no ven ingresos ni editan precios
 }) {
   const [cobrandoA, setCobrandoA] = useState(null); // id del atleta al que se le está cobrando
 
@@ -26,8 +58,88 @@ export default function CoachPagos({
     setCobrandoA(null);
   };
 
+  // Navegación entre meses: hacia atrás sin límite (cuotas atrasadas) y hasta
+  // un mes hacia adelante (cuotas pagadas por adelantado)
+  const diferencia = mesesDesdeHoy(periodo);
+  const esMesActual = diferencia === 0;
+  const puedeAvanzar = diferencia < 1;
+  const cambiarMes = (n) => {
+    setCobrandoA(null);
+    onCambiarPeriodo(moverPeriodo(periodo, n));
+  };
+  const etiquetaPeriodo =
+    diferencia === 0 ? "Mes actual" : diferencia > 0 ? "Mes próximo" : "Mes anterior";
+  const textoSinPago = diferencia < 0 ? "No pagó" : "Cuota pendiente";
+
   return (
     <>
+      {/* Selector de mes */}
+      <div
+        className="card"
+        style={{
+          marginBottom: 8,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          borderColor: esMesActual ? undefined : Y,
+        }}
+      >
+        <button
+          onClick={() => cambiarMes(-1)}
+          title="Mes anterior"
+          style={estiloFlecha(true)}
+        >
+          ←
+        </button>
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              fontFamily: "'Bebas Neue',sans-serif",
+              fontSize: 24,
+              letterSpacing: 2,
+              color: esMesActual ? "#fff" : Y,
+              lineHeight: 1,
+            }}
+          >
+            {MESES[periodo.mes - 1]} {periodo.anio}
+          </div>
+          {esMesActual ? (
+            <div style={{ fontSize: 8, letterSpacing: 2, color: "#7a7a7a", textTransform: "uppercase", marginTop: 4 }}>
+              {etiquetaPeriodo}
+            </div>
+          ) : (
+            <button
+              onClick={() => cambiarMes(-diferencia)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#7a7a7a",
+                fontSize: 8,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                textDecoration: "underline",
+                cursor: "pointer",
+                marginTop: 4,
+                padding: 0,
+              }}
+            >
+              {etiquetaPeriodo} · volver al actual
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => puedeAvanzar && cambiarMes(1)}
+          disabled={!puedeAvanzar}
+          title="Mes siguiente"
+          style={estiloFlecha(puedeAvanzar)}
+        >
+          →
+        </button>
+      </div>
+
+      {esDueno ? (
+        <>
       {/* Balance mensual */}
       <div className="card" style={{ marginBottom: 16, textAlign: "center" }}>
         <div
@@ -39,7 +151,7 @@ export default function CoachPagos({
             marginBottom: 4,
           }}
         >
-          Ingresos del mes
+          Ingresos de {MESES[periodo.mes - 1].toLowerCase()}
         </div>
         <div
           style={{
@@ -49,11 +161,17 @@ export default function CoachPagos({
             lineHeight: 1,
           }}
         >
-          ${ingresosDelMes.toLocaleString("es-AR")}
+          ${ingresosPeriodo.toLocaleString("es-AR")}
         </div>
       </div>
 
       <CoachPlanes planes={planes} onGuardarPrecio={onGuardarPrecioPlan} />
+        </>
+      ) : (
+        <div style={{ fontSize: 9, letterSpacing: 2, color: "#7a7a7a", textTransform: "uppercase", margin: "8px 0 12px", textAlign: "center" }}>
+          Cuotas de Kids y Teens
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {atletas.length === 0 && (
@@ -66,11 +184,11 @@ export default function CoachPagos({
               letterSpacing: 2,
             }}
           >
-            SIN ATLETAS REGISTRADOS AÚN
+            {esDueno ? "SIN ATLETAS REGISTRADOS AÚN" : "SIN ATLETAS DE KIDS O TEENS"}
           </div>
         )}
         {atletas.map((a) => {
-          const pago = pagadoEsteMes(a.id);
+          const pago = pagadoEnPeriodo(a.id);
           const detalle = detallePago(a.id);
           return (
             <div key={a.id}>
@@ -117,7 +235,7 @@ export default function CoachPagos({
                         color: "#f87171",
                       }}
                     >
-                      Cuota pendiente
+                      {textoSinPago}
                     </div>
                   )}
                 </div>

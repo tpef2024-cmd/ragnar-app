@@ -7,10 +7,13 @@ import App from "./App.jsx";
 import Home from "./screens/Home.jsx";
 import Tienda from "./screens/store/Tienda.jsx";
 import Promociones from "./screens/store/Promociones.jsx";
+import CarritoProvider from "./components/store/CarritoProvider.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
+      {/* Carrito compartido entre /tienda y /promociones */}
+      <CarritoProvider>
       <Routes>
         {/* Home público — presentación del gimnasio y accesos a Tienda / App */}
         <Route path="/" element={<Home />} />
@@ -28,6 +31,7 @@ createRoot(document.getElementById("root")).render(
         {/* Cualquier otra ruta no reconocida vuelve al home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </CarritoProvider>
     </BrowserRouter>
     <Analytics />
   </StrictMode>,

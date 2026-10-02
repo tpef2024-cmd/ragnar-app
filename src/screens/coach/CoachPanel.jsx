@@ -6,6 +6,7 @@ import CoachGrupos from "./CoachGrupos";
 import CoachTienda from "./CoachTienda";
 import CoachPromos from "./CoachPromos";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
+import { puedeManejarPago } from "../../lib/helpers";
 
 export default function CoachPanel({
   tabCoach,
@@ -16,22 +17,27 @@ export default function CoachPanel({
   onSeleccionarAtleta,
   onVolverALista,
   onAtletaActualizada,
+  esDueno = false,
 }) {
   const {
     atletas,
     pendientes,
     revocados,
-    pagos,
     planes,
     grupos,
     gruposDisponibles,
     pagadoEsteMes,
-    ingresosDelMes,
+    periodoPagos,
+    setPeriodoPagos,
+    pagosPeriodo,
+    pagadoEnPeriodo,
+    ingresosPeriodo,
     cobrarCuota,
     revertirPago,
     guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
+    guardarHybridAtleta,
     cargarRMsAtleta,
     aprobarAtleta,
     rechazarAtleta,
@@ -39,8 +45,14 @@ export default function CoachPanel({
     reactivarAtleta,
   } = coachData;
 
-  const alDia = atletas.filter((a) => pagadoEsteMes(a.id)).length;
-  const deben = atletas.length - alDia;
+  // Atletas cuyo pago puede ver este usuario: todos para un dueño, solo
+  // Kids/Teens para un profe. Las estadísticas de pago se calculan sobre
+  // ese subconjunto (un profe no puede saber si pagó un atleta de Crossfit).
+  const verPago = (a) => puedeManejarPago(esDueno, a);
+  const atletasConPago = atletas.filter(verPago);
+  const alDia = atletasConPago.filter((a) => pagadoEsteMes(a.id)).length;
+  const deben = atletasConPago.length - alDia;
+  const sufijoProfe = esDueno ? "" : " · Kids/Teens";
 
   return (
     <>
@@ -56,8 +68,8 @@ export default function CoachPanel({
       >
         {[
           { label: "Atletas", val: atletas.length, color: "#fff" },
-          { label: "Al día", val: alDia, color: "#4ade80" },
-          { label: "Deben", val: deben, color: "#f87171" },
+          { label: `Al día${sufijoProfe}`, val: alDia, color: "#4ade80" },
+          { label: `Deben${sufijoProfe}`, val: deben, color: "#f87171" },
         ].map((s) => (
           <div key={s.label} className="card" style={{ textAlign: "center" }}>
             <div
@@ -94,6 +106,7 @@ export default function CoachPanel({
             <CoachAtletas
               atletas={atletas}
               pagadoEsteMes={pagadoEsteMes}
+              verPago={verPago}
               onSeleccionarAtleta={onSeleccionarAtleta}
             />
           </div>
@@ -108,13 +121,17 @@ export default function CoachPanel({
                 onAtletaActualizada={onAtletaActualizada}
                 onVolver={onVolverALista}
                 onRevocarAcceso={revocarAtleta}
+                onGuardarHybrid={guardarHybridAtleta}
+                esDueno={esDueno}
               />
             </div>
           )}
         </div>
       )}
 
-      {tabCoach === "solicitudes" && (
+      {/* Solicitudes, Tienda y Promos: solo dueños (además de ocultar la tab,
+          se chequea acá por si se llega por otro camino) */}
+      {tabCoach === "solicitudes" && esDueno && (
         <CoachSolicitudes
           pendientes={pendientes}
           revocados={revocados}
@@ -126,11 +143,14 @@ export default function CoachPanel({
 
       {tabCoach === "pagos" && (
         <CoachPagos
-          atletas={atletas}
-          pagos={pagos}
+          atletas={atletasConPago}
+          esDueno={esDueno}
+          pagos={pagosPeriodo}
           planes={planes}
-          pagadoEsteMes={pagadoEsteMes}
-          ingresosDelMes={ingresosDelMes}
+          periodo={periodoPagos}
+          onCambiarPeriodo={setPeriodoPagos}
+          pagadoEnPeriodo={pagadoEnPeriodo}
+          ingresosPeriodo={ingresosPeriodo}
           onCobrarCuota={cobrarCuota}
           onRevertirPago={revertirPago}
           onGuardarPrecioPlan={guardarPrecioPlan}
@@ -141,12 +161,13 @@ export default function CoachPanel({
           grupos={grupos}
           atletas={atletas}
           pagadoEsteMes={pagadoEsteMes}
+          verPago={verPago}
         />
       )}
 
-      {tabCoach === "tienda" && <CoachTienda tienda={tienda} />}
+      {tabCoach === "tienda" && esDueno && <CoachTienda tienda={tienda} />}
 
-      {tabCoach === "promos" && <CoachPromos promociones={promociones} />}
+      {tabCoach === "promos" && esDueno && <CoachPromos promociones={promociones} />}
     </>
   );
 }

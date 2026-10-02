@@ -1,10 +1,16 @@
 // ── COMPONENTE: TARJETA DE PRODUCTO ───────────────────────────────────────────
 // Compartido entre la tienda pública y la vista de Promociones.
+// "Agregar al carrito" suma el producto; si ya está, se muestra el selector
+// de cantidad (limitado al stock). La compra se cierra desde el carrito.
 import { Y } from "../../lib/constants";
-import { mensajeWhatsapp } from "../../lib/whatsapp";
+import { formatearPrecio } from "../../lib/whatsapp";
+import { useCarrito } from "../../hooks/useCarrito";
+import SelectorCantidad from "./SelectorCantidad";
 
 export default function TarjetaProducto({ producto }) {
+  const { cantidadDe, agregar, cambiarCantidad } = useCarrito();
   const sinStock = producto.stock <= 0;
+  const enCarrito = cantidadDe(producto.id);
 
   return (
     <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -42,7 +48,7 @@ export default function TarjetaProducto({ producto }) {
           </div>
         )}
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: Y, letterSpacing: 1 }}>
-          ${producto.price}
+          {formatearPrecio(producto.price)}
         </div>
       </div>
 
@@ -50,16 +56,30 @@ export default function TarjetaProducto({ producto }) {
         <div style={{ textAlign: "center", padding: "10px", fontSize: 9, letterSpacing: 2, color: "#f87171", textTransform: "uppercase" }}>
           Sin stock
         </div>
-      ) : (
-        <a
-          href={mensajeWhatsapp(producto)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-y"
-          style={{ textAlign: "center", textDecoration: "none", display: "block" }}
+      ) : enCarrito > 0 ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            padding: "4px 0",
+          }}
         >
-          Comprar
-        </a>
+          <span style={{ fontSize: 9, letterSpacing: 2, color: "#4ade80", textTransform: "uppercase" }}>
+            ✓ En el carrito
+          </span>
+          <SelectorCantidad
+            cantidad={enCarrito}
+            maximo={producto.stock}
+            onCambiar={(n) => cambiarCantidad(producto, n)}
+            compacto
+          />
+        </div>
+      ) : (
+        <button className="btn-y" onClick={() => agregar(producto)}>
+          Agregar
+        </button>
       )}
     </div>
   );

@@ -1,15 +1,25 @@
 // ── PANTALLA: PROMOCIONES ─────────────────────────────────────────────────────
 // Muestra el banner de la promo activa (si hay alguna) y los productos que
 // el coach marcó como parte de esa promo. Pública, sin login.
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePromocionPublica } from "../../hooks/usePromocion";
 import LogoRagnar from "../../components/shared/LogoRagnar";
 import TarjetaProducto from "../../components/store/TarjetaProducto";
+import Carrito from "../../components/store/Carrito";
+import { useCarrito } from "../../hooks/useCarrito";
 import { globalStyles } from "../../styles/globalStyles";
 import { Y } from "../../lib/constants";
 
 export default function Promociones() {
   const { promo, productos, cargando } = usePromocionPublica();
+  const { sincronizar } = useCarrito();
+
+  // Actualizar precios/stock de los productos en promo que ya estén en el
+  // carrito (los demás productos del carrito no se tocan desde acá)
+  useEffect(() => {
+    if (!cargando) sincronizar(productos);
+  }, [cargando, productos, sincronizar]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a" }}>
@@ -31,7 +41,7 @@ export default function Promociones() {
         <div style={{ height: 1, background: `linear-gradient(90deg,${Y},transparent)` }} />
       </div>
 
-      <div className="fu" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "36px 20px 60px" }}>
+      <div className="fu" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "36px 20px 110px" }}>
         {cargando && (
           <div style={{ textAlign: "center", padding: 40, color: "#555", fontSize: 10, letterSpacing: 2 }}>
             CARGANDO...
@@ -102,6 +112,7 @@ export default function Promociones() {
           </>
         )}
       </div>
+      <Carrito />
     </div>
   );
 }

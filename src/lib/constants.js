@@ -1,7 +1,7 @@
 // ── CONSTANTES GLOBALES ───────────────────────────────────────────────────────
 
 // Movimientos de RM disponibles, según la disciplina del atleta.
-// "Adultos Mayores" y "Niños" quedan sin movimientos de RM por ahora — a
+// "Adultos Mayores", "Kids" y "Teens" quedan sin movimientos de RM por ahora — a
 // esas disciplinas no se les carga esta sección hasta que se defina qué
 // marcas tiene sentido pedirles.
 export const MOVIMIENTOS_POR_DISCIPLINA = {
@@ -27,7 +27,8 @@ export const MOVIMIENTOS_POR_DISCIPLINA = {
     "Swing Ruso",
   ],
   "Adultos Mayores": [],
-  Niños: [],
+  Kids: [],
+  Teens: [],
 };
 
 export const PORCENTAJES = [50, 60, 70, 75, 80, 85, 90, 95, 100];
@@ -35,8 +36,19 @@ export const DISCIPLINAS = [
   "Crossfit",
   "Funcional",
   "Adultos Mayores",
-  "Niños",
+  "Kids",
+  "Teens",
 ];
+
+// Disciplina complementaria: convive con la disciplina principal del atleta
+// (se guarda aparte, en profiles.is_hybrid). Más adelante va a tener su
+// propia tabla de registros.
+export const HYBRID = "Hybrid";
+
+// Disciplinas cuyas cuotas pueden cobrar los profes (no dueños). Tiene que
+// coincidir con la función es_kids_teens() de la base de datos
+// (supabase/migrations/20261002b_rol_dueno_hybrid.sql).
+export const DISCIPLINAS_COBRO_PROFE = ["Kids", "Teens"];
 
 // ── PALETA DE COLORES ─────────────────────────────────────────────────────────
 // NOTA (Fase 1 - contraste): los grises oscuros (#444, #333) que antes se usaban
