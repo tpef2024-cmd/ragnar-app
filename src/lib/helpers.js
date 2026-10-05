@@ -1,5 +1,11 @@
 // ── HELPERS GENERALES ─────────────────────────────────────────────────────────
-import { MOVIMIENTOS_POR_DISCIPLINA, DISCIPLINAS_COBRO_PROFE } from "./constants";
+import {
+  MOVIMIENTOS_POR_DISCIPLINA,
+  DISCIPLINAS_COBRO_PROFE,
+  HORARIOS,
+  HORARIOS_LABEL,
+  FRECUENCIAS,
+} from "./constants";
 
 // ¿El usuario logueado puede ver/manejar el pago de este atleta?
 // Dueños: todos. Profes: solo atletas de Kids o Teens. (La base de datos
@@ -40,4 +46,29 @@ export function tiempoASegundos(tiempoStr) {
 export function obtenerRMDeLista(registros, movimiento) {
   const reg = registros.find((r) => r.movement === movimiento);
   return reg ? parseFloat(reg.weight_kg) : null;
+}
+
+// Nombre de grupo para mostrar, con el horario en 24hs:
+// "2PM — 3x semana" → "14hs — 3x semana". Si no matchea, devuelve el nombre tal cual.
+export function etiquetaGrupo(nombre) {
+  if (!nombre) return nombre;
+  const [horario, ...resto] = nombre.split(" — ");
+  const label = HORARIOS_LABEL[horario];
+  return label && resto.length ? [label, ...resto].join(" — ") : nombre;
+}
+
+// Ordena los grupos por horario (mañana → noche) y después por frecuencia
+export function ordenarGrupos(grupos) {
+  const pos = (g) => {
+    const [horario, frecuencia] = (g.name || "").split(" — ");
+    const h = HORARIOS.indexOf(horario);
+    const f = FRECUENCIAS.indexOf(frecuencia);
+    return (h === -1 ? 99 : h) * 100 + (f === -1 ? 99 : f);
+  };
+  return [...grupos].sort((a, b) => pos(a) - pos(b));
+}
+
+// Fecha local "YYYY-MM-DD" (mismo formato que attendance.check_date)
+export function fechaISO(d = new Date()) {
+  return d.toLocaleDateString("en-CA");
 }

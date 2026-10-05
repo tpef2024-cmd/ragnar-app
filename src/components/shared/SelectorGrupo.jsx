@@ -1,6 +1,7 @@
 // ── COMPONENTE: SELECTOR DE GRUPO (horario + frecuencia) ─────────────────────
 import { useState } from "react";
-import { Y, HORARIOS, FRECUENCIAS } from "../../lib/constants";
+import { Y, HORARIOS, HORARIOS_LABEL, FRECUENCIAS } from "../../lib/constants";
+import { etiquetaGrupo } from "../../lib/helpers";
 
 const estiloSelect = {
   width: "100%",
@@ -40,7 +41,7 @@ export default function SelectorGrupo({ grupos, onSeleccionar, onCancelar }) {
       <select value={horario} onChange={(e) => setHorario(e.target.value)} style={estiloSelect}>
         <option value="" disabled>Seleccioná horario...</option>
         {HORARIOS.map((h) => (
-          <option key={h} value={h}>{h}</option>
+          <option key={h} value={h}>{HORARIOS_LABEL[h] || h}</option>
         ))}
       </select>
 
@@ -71,7 +72,7 @@ export default function SelectorGrupo({ grupos, onSeleccionar, onCancelar }) {
             marginBottom: 8,
           }}
         >
-          ✓ Confirmar — {grupoSeleccionado.name}
+          ✓ Confirmar — {etiquetaGrupo(grupoSeleccionado.name)}
         </button>
       )}
       {onCancelar && (

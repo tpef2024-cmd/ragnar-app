@@ -65,7 +65,17 @@ export const TEXT_SECONDARY = "#b3b3b3"; // texto secundario (antes #888/#555, i
 export const TEXT_MUTED = "#7a7a7a"; // texto terciario/labels (antes #444/#333)
 
 // ── HORARIOS Y FRECUENCIAS DISPONIBLES ───────────────────────────────────────
-export const HORARIOS = ["7AM", "8AM", "10AM", "6PM", "8PM"];
+// El valor (ej. "2PM") es parte del nombre del grupo en la base ("2PM — 3x semana"),
+// por eso no se cambia el formato. La etiqueta en 24hs es solo para mostrar.
+export const HORARIOS = [
+  "6AM", "7AM", "8AM", "9AM", "10AM", "11AM",
+  "2PM", "3PM", "6PM", "7PM", "8PM",
+];
+export const HORARIOS_LABEL = {
+  "6AM": "6hs", "7AM": "7hs", "8AM": "8hs", "9AM": "9hs", "10AM": "10hs",
+  "11AM": "11hs", "2PM": "14hs", "3PM": "15hs", "6PM": "18hs", "7PM": "19hs",
+  "8PM": "20hs",
+};
 export const FRECUENCIAS = [
   "2x semana",
   "3x semana",

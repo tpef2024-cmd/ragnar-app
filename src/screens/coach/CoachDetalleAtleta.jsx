@@ -6,8 +6,41 @@ import {
   Y,
   BORDER,
 } from "../../lib/constants";
-import { obtenerRMDeLista, movimientosDeDisciplina } from "../../lib/helpers";
+import { obtenerRMDeLista, movimientosDeDisciplina, etiquetaGrupo } from "../../lib/helpers";
 import SelectorGrupo from "../../components/shared/SelectorGrupo";
+import SeccionNotas from "../../components/shared/SeccionNotas";
+import { useNotas } from "../../hooks/useNotas";
+import CobrarCuota from "./CobrarCuota";
+import AsistenciaAtleta from "./AsistenciaAtleta";
+
+const MESES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+const estiloTitulo = {
+  fontSize: 9,
+  letterSpacing: 3,
+  color: "#999",
+  textTransform: "uppercase",
+  marginBottom: 10,
+};
+
+const formatearFecha = (iso) => {
+  if (!iso) return null;
+  const [a, m, d] = iso.split("-");
+  return `${d}/${m}/${a}`;
+};
+
+// Edad en años a partir de "YYYY-MM-DD"
+const calcularEdad = (iso) => {
+  if (!iso) return null;
+  const n = new Date(iso + "T00:00:00");
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - n.getFullYear();
+  if (hoy < new Date(hoy.getFullYear(), n.getMonth(), n.getDate())) edad--;
+  return edad;
+};
 
 // Chip de disciplina: resaltado si está seleccionada, clickeable solo si el
 // usuario puede editar (dueño)
@@ -34,9 +67,39 @@ export default function CoachDetalleAtleta({
   onVolver,
   onRevocarAcceso,
   onGuardarHybrid,
-  esDueno = false, // los profes ven el detalle en modo solo lectura
+  esDueno = false, // los profes ven grupo/disciplina en modo solo lectura
+  usuarioId,
+  // Pago del mes actual (solo si este usuario puede manejar el pago del atleta)
+  puedeVerPago = false,
+  pagoDelMes,
+  planes = [],
+  onCobrarCuota,
+  onRevertirPago,
+  // Asistencia
+  cargarAsistenciaAtleta,
+  cargarUltimaAsistencia,
+  onMarcarAsistencia,
+  onQuitarAsistencia,
 }) {
   const [rmsAtleta, setRmsAtleta] = useState([]);
+  const [cobrando, setCobrando] = useState(false);
+  const notas = useNotas(atleta.id);
+
+  // El cobro desde el detalle siempre es del mes actual
+  const hoy = new Date();
+  const periodoActual = { mes: hoy.getMonth() + 1, anio: hoy.getFullYear() };
+  const pago = pagoDelMes?.(atleta.id);
+  const nombrePlan = (planId) => planes.find((p) => p.id === planId)?.name;
+
+  const handleCobrar = async (datos) => {
+    await onCobrarCuota(atleta.id, datos, periodoActual);
+    setCobrando(false);
+  };
+
+  const handleRevertir = async () => {
+    if (!window.confirm(`¿Revertir el pago de ${MESES[periodoActual.mes - 1]} de ${atleta.full_name}?`)) return;
+    await onRevertirPago(atleta.id, periodoActual);
+  };
   const [movAtleta, setMovAtleta] = useState("Back Squat");
   const [asignandoGrupo, setAsignandoGrupo] = useState(false);
 
@@ -161,6 +224,102 @@ export default function CoachDetalleAtleta({
         )}
       </div>
 
+      {/* Cuota del mes actual */}
+      {puedeVerPago && (
+        <div className="card" style={{ marginBottom: 16, borderColor: pago ? undefined : "#7f1d1d" }}>
+          <div style={estiloTitulo}>Cuota de {MESES[periodoActual.mes - 1]}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            {pago ? (
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "#4ade80" }}>
+                ✓ Al día — {pago.plan_id ? nombrePlan(pago.plan_id) : "monto libre"} · $
+                {Number(pago.amount || 0).toLocaleString("es-AR")}
+                {pago.payment_method && (
+                  <span style={{ color: "#7a7a7a" }}>
+                    {" "}· {pago.payment_method === "efectivo" ? "💵 Efectivo" : "🏦 Transferencia"}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "#f87171" }}>Cuota pendiente</div>
+            )}
+            {pago ? (
+              <button
+                onClick={handleRevertir}
+                title="Revertir pago (por si fue un error)"
+                style={{
+                  background: "transparent",
+                  border: "1px solid #3a3a3a",
+                  color: "#7a7a7a",
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: 9,
+                  padding: "5px 8px",
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ↺ Revertir
+              </button>
+            ) : (
+              <button
+                onClick={() => setCobrando((c) => !c)}
+                style={{
+                  background: "#0d2b1a",
+                  border: "1px solid #166534",
+                  color: "#4ade80",
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  padding: "7px 12px",
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {cobrando ? "✕ Cerrar" : "$ Cobrar cuota"}
+              </button>
+            )}
+          </div>
+          {cobrando && !pago && (
+            <CobrarCuota
+              planes={planes}
+              periodoTexto={MESES[periodoActual.mes - 1]}
+              onConfirmar={handleCobrar}
+              onCancelar={() => setCobrando(false)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Datos personales */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={estiloTitulo}>Datos personales</div>
+        {[
+          ["Teléfono", atleta.phone],
+          [
+            "Nacimiento",
+            atleta.birth_date &&
+              `${formatearFecha(atleta.birth_date)} (${calcularEdad(atleta.birth_date)} años)`,
+          ],
+          ["Emergencia", atleta.emergency_contact],
+        ].map(([label, valor]) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderBottom: "1px solid #1e1e1e" }}>
+            <span style={{ fontSize: 9, color: "#7a7a7a", letterSpacing: 2, textTransform: "uppercase" }}>{label}</span>
+            {label === "Teléfono" && valor ? (
+              <a href={`tel:${valor}`} style={{ fontSize: 12, color: Y, textDecoration: "none" }}>{valor}</a>
+            ) : (
+              <span style={{ fontSize: 12, color: valor ? "#ddd" : "#555", textAlign: "right" }}>{valor || "Sin cargar"}</span>
+            )}
+          </div>
+        ))}
+        {atleta.sin_app && (
+          <div style={{ fontSize: 9, color: "#60a5fa", letterSpacing: 1, marginTop: 10 }}>
+            Dado de alta por un profe · no usa la app
+          </div>
+        )}
+      </div>
+
       {/* Asignación de grupo */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div
@@ -193,7 +352,7 @@ export default function CoachDetalleAtleta({
                       color: Y,
                     }}
                   >
-                    {grupoActual?.name || "—"}
+                    {etiquetaGrupo(grupoActual?.name) || "—"}
                   </div>
                   <div style={{ fontSize: 9, color: "#999", letterSpacing: 1 }}>
                     {grupoActual?.schedule || ""}
@@ -292,6 +451,42 @@ export default function CoachDetalleAtleta({
           </>
         )}
       </div>
+
+      {/* Asistencia */}
+      {cargarAsistenciaAtleta && (
+        <AsistenciaAtleta
+          atleta={atleta}
+          grupo={grupoActual}
+          cargarAsistenciaAtleta={cargarAsistenciaAtleta}
+          cargarUltimaAsistencia={cargarUltimaAsistencia}
+          onMarcar={onMarcarAsistencia}
+          onQuitar={onQuitarAsistencia}
+        />
+      )}
+
+      {/* Información que cargó el atleta (solo lectura para el profe) */}
+      <SeccionNotas
+        titulo="Info del atleta"
+        aclaracion="La cargó el atleta desde su perfil."
+        notas={notas.notasAtleta}
+        cargando={notas.cargando}
+        vacio="El atleta no cargó información."
+      />
+
+      {/* Notas privadas de profes */}
+      <SeccionNotas
+        titulo="🔒 Notas de profes"
+        aclaracion="Solo las ven los profes. El atleta no las ve."
+        notas={notas.notasCoach}
+        cargando={notas.cargando}
+        placeholder="Ej: viene de una lesión de rodilla, no hacer saltos..."
+        vacio="Sin notas todavía."
+        onAgregar={(texto) => notas.agregar("coach", texto)}
+        puedeBorrar={(n) => esDueno || n.author_id === usuarioId}
+        onBorrar={notas.borrar}
+        mostrarAutor
+        colorBorde="#3a2f00"
+      />
 
       {/* Grilla de RMs */}
       {movimientos.length === 0 ? (

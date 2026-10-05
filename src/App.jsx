@@ -51,7 +51,30 @@ export default function App() {
     logout,
     enviarRecuperacion,
     actualizarPassword,
+    actualizarPerfil,
   } = useAuth();
+
+  // ── PROFES QUE TAMBIÉN ENTRENAN ──────────────────────────────────────────
+  // Un coach puede pasar a la vista de atleta (sus propios RMs, asistencia,
+  // logros) y volver. `modo` es lo que se muestra; `pantalla` sigue siendo
+  // su rol real. Se recuerda la última vista elegida en este dispositivo.
+  const [vistaCoach, setVistaCoach] = useState(() => {
+    try {
+      return localStorage.getItem("ragnar_vista_coach") === "athlete" ? "athlete" : "coach";
+    } catch {
+      return "coach";
+    }
+  });
+  const modo = pantalla === "coach" ? vistaCoach : pantalla;
+  const cambiarVistaCoach = () => {
+    const nueva = vistaCoach === "coach" ? "athlete" : "coach";
+    setVistaCoach(nueva);
+    try {
+      localStorage.setItem("ragnar_vista_coach", nueva);
+    } catch {
+      // sin storage (modo privado): la vista elegida vale solo para esta sesión
+    }
+  };
 
   // ── ESTADOS DE NAVEGACIÓN ────────────────────────────────────────────────
   const [tabAtleta, setTabAtleta] = useState("resumen");
@@ -61,8 +84,8 @@ export default function App() {
   const [guardando, setGuardando] = useState(false);
 
   // ── DATOS ─────────────────────────────────────────────────────────────────
-  const athleteDataRaw = useAthleteData(usuario, pantalla === "athlete");
-  const attendanceData = useAttendance(usuario, pantalla === "athlete");
+  const athleteDataRaw = useAthleteData(usuario, modo === "athlete");
+  const attendanceData = useAttendance(usuario, modo === "athlete");
   // Dueño = coach con is_owner. Los profes no cargan tienda ni promos.
   const esDueno = pantalla === "coach" && !!perfil?.is_owner;
   const coachData = useCoachData(usuario, pantalla === "coach");
@@ -106,8 +129,8 @@ export default function App() {
 
   // ── NAVEGACIÓN: volver al inicio al clickear el logo ────────────────────
   const handleLogoClick = () => {
-    if (pantalla === "athlete") setTabAtleta("resumen");
-    if (pantalla === "coach") {
+    if (modo === "athlete") setTabAtleta("resumen");
+    if (modo === "coach") {
       setTabCoach("atletas");
       setAtletaSeleccionado(null);
     }
@@ -218,26 +241,42 @@ export default function App() {
     <>
       <style>{globalStyles}</style>
       <AppShell
-        rolLabel={pantalla === "athlete" ? "Atleta" : esDueno ? "Dueño" : "Coach"}
+        rolLabel={
+          modo === "athlete"
+            ? pantalla === "coach"
+              ? "Modo atleta"
+              : "Atleta"
+            : esDueno
+              ? "Dueño"
+              : "Coach"
+        }
         nombreUsuario={perfil?.full_name || usuario?.email || "Admin"}
-        tabs={pantalla === "athlete" ? TABS_ATLETA : tabsCoach}
+        tabs={modo === "athlete" ? TABS_ATLETA : tabsCoach}
         tabActivo={
-          pantalla === "athlete"
+          modo === "athlete"
             ? tabAtleta
             : tabCoach === "detalle_atleta"
               ? "atletas"
               : tabCoach
         }
-        onCambiarTab={pantalla === "athlete" ? setTabAtleta : setTabCoach}
+        onCambiarTab={modo === "athlete" ? setTabAtleta : setTabCoach}
         onLogoClick={handleLogoClick}
         onSalir={logout}
+        vistaAlternativa={
+          pantalla === "coach"
+            ? modo === "coach"
+              ? "Mi vista de atleta"
+              : "Volver al panel coach"
+            : null
+        }
+        onCambiarVista={cambiarVistaCoach}
         badges={
-          esDueno && coachData.pendientes.length > 0
+          modo === "coach" && esDueno && coachData.pendientes.length > 0
             ? { solicitudes: coachData.pendientes.length }
             : {}
         }
       >
-        {pantalla === "athlete" && (
+        {modo === "athlete" && (
           <AthletePanel
             tabAtleta={tabAtleta}
             movSeleccionado={movSeleccionado}
@@ -248,10 +287,11 @@ export default function App() {
             athleteData={athleteData}
             attendanceData={attendanceData}
             guardando={guardando}
+            onGuardarPerfil={actualizarPerfil}
           />
         )}
 
-        {pantalla === "coach" && (
+        {modo === "coach" && (
           <CoachPanel
             tabCoach={tabCoach}
             coachData={coachData}
@@ -262,6 +302,7 @@ export default function App() {
             onVolverALista={handleVolverALista}
             onAtletaActualizada={handleAtletaActualizada}
             esDueno={esDueno}
+            usuarioId={usuario?.id}
           />
         )}
       </AppShell>
