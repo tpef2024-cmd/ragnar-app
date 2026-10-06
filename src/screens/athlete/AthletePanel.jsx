@@ -22,6 +22,7 @@ export default function AthletePanel({
   athleteData,
   attendanceData,
   guardando,
+  onGuardarPerfil,
 }) {
   const {
     registrosRM,
@@ -43,6 +44,7 @@ export default function AthletePanel({
           perfil={perfil}
           usuario={usuario}
           gruposDisponibles={gruposDisponibles}
+          onGuardarPerfil={onGuardarPerfil}
         />
       )}
       {tabAtleta === "resumen" && (

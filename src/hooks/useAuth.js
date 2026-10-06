@@ -172,8 +172,28 @@ export function useAuth() {
     [cargarUsuario],
   );
 
+  // Guardar los datos personales del propio usuario (nombre, teléfono, etc.).
+  // La base solo deja cambiar estos campos: rol, estado, grupo y disciplina
+  // están protegidos por el trigger proteger_campos_perfil.
+  const actualizarPerfil = useCallback(
+    async (datos) => {
+      if (!usuario) return { error: "Sin sesión" };
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(datos)
+        .eq("id", usuario.id)
+        .select()
+        .single();
+      if (error) return { error: "No se pudieron guardar los cambios." };
+      setPerfil(data);
+      return { error: null };
+    },
+    [usuario],
+  );
+
   return {
     pantalla,
+    actualizarPerfil,
     setPantalla,
     usuario,
     perfil,

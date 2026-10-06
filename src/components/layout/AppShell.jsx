@@ -18,7 +18,32 @@ export default function AppShell({
   onSalir,
   children,
   badges = {}, // { [tabKey]: numero } — muestra un contador rojo al lado del label
+  vistaAlternativa = null, // texto del botón para cambiar coach ⇄ atleta (solo coaches)
+  onCambiarVista,
 }) {
+  const botonVista = (estiloExtra) =>
+    vistaAlternativa && (
+      <button
+        onClick={onCambiarVista}
+        style={{
+          background: "#1a1500",
+          border: `1px solid ${Y}`,
+          color: Y,
+          fontFamily: "'DM Mono',monospace",
+          fontSize: 9,
+          letterSpacing: 1,
+          padding: "6px 10px",
+          borderRadius: 2,
+          cursor: "pointer",
+          textTransform: "uppercase",
+          whiteSpace: "nowrap",
+          ...estiloExtra,
+        }}
+      >
+        ⇄ {vistaAlternativa}
+      </button>
+    );
+
   return (
     <div className="app-shell">
       {/* SIDEBAR — solo visible en desktop */}
@@ -50,6 +75,8 @@ export default function AppShell({
         >
           {nombreUsuario}
         </div>
+
+        {botonVista({ marginTop: -14, marginBottom: 24, padding: "8px 10px" })}
 
         <nav className="sidebar-nav">
           {tabs.map(([key, label]) => (
@@ -130,6 +157,11 @@ export default function AppShell({
               background: `linear-gradient(90deg,${Y},transparent)`,
             }}
           />
+          {vistaAlternativa && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              {botonVista()}
+            </div>
+          )}
           <div className="mobile-tabs">
             {tabs.map(([key, label]) => (
               <button

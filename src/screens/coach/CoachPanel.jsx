@@ -18,6 +18,7 @@ export default function CoachPanel({
   onVolverALista,
   onAtletaActualizada,
   esDueno = false,
+  usuarioId,
 }) {
   const {
     atletas,
@@ -34,6 +35,12 @@ export default function CoachPanel({
     ingresosPeriodo,
     cobrarCuota,
     revertirPago,
+    pagoDelMes,
+    crearAtleta,
+    cargarAsistenciaAtleta,
+    cargarUltimaAsistencia,
+    marcarAsistencia,
+    quitarAsistencia,
     guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
@@ -108,11 +115,14 @@ export default function CoachPanel({
               pagadoEsteMes={pagadoEsteMes}
               verPago={verPago}
               onSeleccionarAtleta={onSeleccionarAtleta}
+              gruposDisponibles={gruposDisponibles}
+              onCrearAtleta={crearAtleta}
             />
           </div>
           {atletaSeleccionado && (
             <div className="coach-detail-pane">
               <CoachDetalleAtleta
+                key={atletaSeleccionado.id}
                 atleta={atletaSeleccionado}
                 gruposDisponibles={gruposDisponibles}
                 cargarRMsAtleta={cargarRMsAtleta}
@@ -123,6 +133,16 @@ export default function CoachPanel({
                 onRevocarAcceso={revocarAtleta}
                 onGuardarHybrid={guardarHybridAtleta}
                 esDueno={esDueno}
+                usuarioId={usuarioId}
+                puedeVerPago={verPago(atletaSeleccionado)}
+                pagoDelMes={pagoDelMes}
+                planes={planes}
+                onCobrarCuota={cobrarCuota}
+                onRevertirPago={revertirPago}
+                cargarAsistenciaAtleta={cargarAsistenciaAtleta}
+                cargarUltimaAsistencia={cargarUltimaAsistencia}
+                onMarcarAsistencia={marcarAsistencia}
+                onQuitarAsistencia={quitarAsistencia}
               />
             </div>
           )}

@@ -47,6 +47,26 @@ export default function CoachPagos({
   esDueno = false, // los profes no ven ingresos ni editan precios
 }) {
   const [cobrandoA, setCobrandoA] = useState(null); // id del atleta al que se le está cobrando
+  const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState("todos"); // "todos" | "deben" | "aldia"
+
+  // Buscador por nombre + filtro por estado de pago del mes elegido.
+  // Los que deben quedan primero, después alfabético.
+  const atletasFiltrados = atletas
+    .filter((a) => {
+      const coincide = (a.full_name || "")
+        .toLowerCase()
+        .includes(busqueda.trim().toLowerCase());
+      const pago = pagadoEnPeriodo(a.id);
+      const estado = filtro === "todos" || (filtro === "deben" ? !pago : pago);
+      return coincide && estado;
+    })
+    .sort(
+      (a, b) =>
+        Number(pagadoEnPeriodo(a.id)) - Number(pagadoEnPeriodo(b.id)) ||
+        (a.full_name || "").localeCompare(b.full_name || "", "es"),
+    );
+  const cantDeben = atletas.filter((a) => !pagadoEnPeriodo(a.id)).length;
 
   // Obtener el detalle del pago de un atleta (para mostrar combo/monto en la fila)
   const detallePago = (atletaId) =>
@@ -173,7 +193,36 @@ export default function CoachPagos({
         </div>
       )}
 
+      {/* Buscador + filtro */}
+      <input
+        className="inp"
+        placeholder="Buscar atleta..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        style={{ marginBottom: 8 }}
+      />
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {[
+          ["todos", `Todos (${atletas.length})`],
+          ["deben", `${textoSinPago} (${cantDeben})`],
+          ["aldia", `Al día (${atletas.length - cantDeben})`],
+        ].map(([val, label]) => (
+          <button
+            key={val}
+            className={`chip-disc ${filtro === val ? "on" : ""}`}
+            onClick={() => setFiltro(val)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {atletas.length > 0 && atletasFiltrados.length === 0 && (
+          <div style={{ textAlign: "center", padding: 24, color: "#555", fontSize: 10, letterSpacing: 2 }}>
+            SIN RESULTADOS
+          </div>
+        )}
         {atletas.length === 0 && (
           <div
             style={{
@@ -187,7 +236,7 @@ export default function CoachPagos({
             {esDueno ? "SIN ATLETAS REGISTRADOS AÚN" : "SIN ATLETAS DE KIDS O TEENS"}
           </div>
         )}
-        {atletas.map((a) => {
+        {atletasFiltrados.map((a) => {
           const pago = pagadoEnPeriodo(a.id);
           const detalle = detallePago(a.id);
           return (

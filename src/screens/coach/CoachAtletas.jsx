@@ -1,9 +1,19 @@
 // ── TAB: ATLETAS (coach) ──────────────────────────────────────────────────────
 import { useState } from "react";
 import { DISCIPLINAS, HYBRID, Y } from "../../lib/constants";
+import { etiquetaGrupo } from "../../lib/helpers";
+import AltaAtleta from "./AltaAtleta";
 
-export default function CoachAtletas({ atletas, pagadoEsteMes, verPago = () => true, onSeleccionarAtleta }) {
+export default function CoachAtletas({
+  atletas,
+  pagadoEsteMes,
+  verPago = () => true,
+  onSeleccionarAtleta,
+  gruposDisponibles = [],
+  onCrearAtleta,
+}) {
   const [busqueda, setBusqueda] = useState("");
+  const [mostrarAlta, setMostrarAlta] = useState(false);
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
 
   const atletasFiltrados = atletas.filter((a) => {
@@ -18,6 +28,34 @@ export default function CoachAtletas({ atletas, pagadoEsteMes, verPago = () => t
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {onCrearAtleta &&
+        (mostrarAlta ? (
+          <AltaAtleta
+            gruposDisponibles={gruposDisponibles}
+            onCrear={onCrearAtleta}
+            onCerrar={() => setMostrarAlta(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setMostrarAlta(true)}
+            style={{
+              background: "#1a1500",
+              border: `1px dashed ${Y}`,
+              color: Y,
+              fontFamily: "'DM Mono',monospace",
+              fontSize: 10,
+              letterSpacing: 2,
+              padding: "12px",
+              borderRadius: 2,
+              cursor: "pointer",
+              textTransform: "uppercase",
+              marginBottom: 4,
+            }}
+          >
+            + Dar de alta un atleta
+          </button>
+        ))}
+
       <input className="inp" placeholder="Buscar atleta..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={{ marginBottom: 4 }} />
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
@@ -42,9 +80,10 @@ export default function CoachAtletas({ atletas, pagadoEsteMes, verPago = () => t
           <div>
             <div style={{ fontSize: 13, marginBottom: 2, color: "#fff" }}>{a.full_name}</div>
             <div style={{ fontSize: 9, color: "#7a7a7a", letterSpacing: 1 }}>
-              {a.groups?.name || "Sin grupo"}
+              {etiquetaGrupo(a.groups?.name) || "Sin grupo"}
               {a.discipline && <span style={{ color: "#999", marginLeft: 6 }}>· {a.discipline}</span>}
               {a.is_hybrid && <span style={{ color: Y, marginLeft: 6 }}>+ {HYBRID}</span>}
+              {a.sin_app && <span style={{ color: "#60a5fa", marginLeft: 6 }}>· Sin app</span>}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

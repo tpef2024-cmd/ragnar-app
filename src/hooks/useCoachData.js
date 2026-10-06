@@ -206,17 +206,24 @@ export function useCoachData(usuario, activo) {
     0,
   );
 
+  // ¿El atleta ya tiene pagado este período? Usa la lista que corresponda
+  // (mes actual, o el mes elegido en la tab Pagos).
+  const yaPagado = (atletaId, periodo) =>
+    (esMismoPeriodo(periodo, periodoActual()) && pagadoEsteMes(atletaId)) ||
+    (esMismoPeriodo(periodo, periodoPagos) && pagadoEnPeriodo(atletaId));
+
   // Función de cobro de cuota — acepta un combo (planId + método de pago) o un
-  // monto libre tipeado por el coach. El pago se imputa al mes elegido en la
-  // tab Pagos (no al mes en que se cobra), así una cuota de septiembre cobrada
-  // el 3 de octubre queda registrada como septiembre. Evita duplicar el pago
-  // del mismo mes para el mismo atleta (además del índice único en la base).
+  // monto libre tipeado por el coach. Por defecto el pago se imputa al mes
+  // elegido en la tab Pagos (no al mes en que se cobra), así una cuota de
+  // septiembre cobrada el 3 de octubre queda registrada como septiembre.
+  // Desde el detalle del atleta se pasa `periodo` = mes actual.
+  // Evita duplicar el pago del mismo mes (además del índice único en la base).
   const cobrarCuota = async (
     atletaId,
     { planId = null, monto, metodo = null },
+    periodo = periodoPagos,
   ) => {
-    const periodo = periodoPagos;
-    if (pagadoEnPeriodo(atletaId)) return;
+    if (yaPagado(atletaId, periodo)) return;
 
     const montoFinal = Number(monto) || 0;
     const nuevoPago = {
@@ -230,7 +237,9 @@ export function useCoachData(usuario, activo) {
     };
 
     // Actualizar estado local inmediatamente para feedback visual
-    setPagosPeriodo((prev) => [...prev, nuevoPago]);
+    if (esMismoPeriodo(periodo, periodoPagos)) {
+      setPagosPeriodo((prev) => [...prev, nuevoPago]);
+    }
     if (esMismoPeriodo(periodo, periodoActual())) {
       setPagos((prev) => [...prev, nuevoPago]);
     }
@@ -243,15 +252,16 @@ export function useCoachData(usuario, activo) {
 
     // Recargar desde la base: si el insert falló (ej. pago duplicado), la
     // pantalla vuelve a mostrar el estado real
-    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodo)]);
+    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodoPagos)]);
   };
 
-  // Revertir el pago de un atleta en el mes elegido (por si el coach se
-  // confunde al cobrar)
-  const revertirPago = async (atletaId) => {
-    const periodo = periodoPagos;
+  // Revertir el pago de un atleta en un mes (por defecto el elegido en la
+  // tab Pagos) — por si el coach se confunde al cobrar
+  const revertirPago = async (atletaId, periodo = periodoPagos) => {
     // Quitar del estado local al instante
-    setPagosPeriodo((prev) => prev.filter((p) => p.athlete_id !== atletaId));
+    if (esMismoPeriodo(periodo, periodoPagos)) {
+      setPagosPeriodo((prev) => prev.filter((p) => p.athlete_id !== atletaId));
+    }
     if (esMismoPeriodo(periodo, periodoActual())) {
       setPagos((prev) => prev.filter((p) => p.athlete_id !== atletaId));
     }
@@ -264,7 +274,74 @@ export function useCoachData(usuario, activo) {
       .eq("period_month", periodo.mes)
       .eq("period_year", periodo.anio);
 
-    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodo)]);
+    await Promise.all([cargarPagos(), cargarPagosPeriodo(periodoPagos)]);
+  };
+
+  // Detalle del pago del mes actual de un atleta (para el detalle del atleta)
+  const pagoDelMes = (atletaId) => pagos.find((p) => p.athlete_id === atletaId);
+
+  // Dar de alta un atleta desde el panel (Kids sin celular, Adultos Mayores,
+  // etc.). Lo hace la Edge Function "crear-atleta", porque crear un usuario
+  // necesita la service_role key, que no puede estar en el frontend.
+  // Devuelve { error } o { ok: true }.
+  const crearAtleta = async (datos) => {
+    const { data, error } = await supabase.functions.invoke("crear-atleta", {
+      body: datos,
+    });
+    if (error) {
+      let mensaje = "No se pudo dar de alta al atleta. Probá de nuevo.";
+      try {
+        const cuerpo = await error.context?.json();
+        if (cuerpo?.error) mensaje = cuerpo.error;
+      } catch {
+        // la respuesta no era JSON (ej. la función no está desplegada)
+      }
+      return { error: mensaje };
+    }
+    await cargarAtletas();
+    return { ok: true, id: data?.id };
+  };
+
+  // ── ASISTENCIA DE UN ATLETA (vista del profe) ─────────────────────────────
+  // Check-ins entre dos fechas "YYYY-MM-DD" (inclusive)
+  const cargarAsistenciaAtleta = useCallback(async (atletaId, desde, hasta) => {
+    const { data } = await supabase
+      .from("attendance")
+      .select("check_date, checked_in_at")
+      .eq("athlete_id", atletaId)
+      .gte("check_date", desde)
+      .lte("check_date", hasta)
+      .order("check_date", { ascending: false });
+    return data || [];
+  }, []);
+
+  // Último check-in registrado (sin importar el mes)
+  const cargarUltimaAsistencia = useCallback(async (atletaId) => {
+    const { data } = await supabase
+      .from("attendance")
+      .select("check_date")
+      .eq("athlete_id", atletaId)
+      .order("check_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.check_date || null;
+  }, []);
+
+  // Marcar presente / quitar a un atleta en una fecha (para los que no
+  // escanean el QR). Devuelve true si salió bien.
+  const marcarAsistencia = async (atletaId, fecha) => {
+    const { error } = await supabase
+      .from("attendance")
+      .insert({ athlete_id: atletaId, check_date: fecha });
+    return !error || error.code === "23505";
+  };
+  const quitarAsistencia = async (atletaId, fecha) => {
+    const { error } = await supabase
+      .from("attendance")
+      .delete()
+      .eq("athlete_id", atletaId)
+      .eq("check_date", fecha);
+    return !error;
   };
 
   // Guardar/actualizar el precio de un combo — campo es "price_efectivo" o "price_transferencia"
@@ -328,6 +405,12 @@ export function useCoachData(usuario, activo) {
     ingresosPeriodo,
     cobrarCuota,
     revertirPago,
+    pagoDelMes,
+    crearAtleta,
+    cargarAsistenciaAtleta,
+    cargarUltimaAsistencia,
+    marcarAsistencia,
+    quitarAsistencia,
     guardarPrecioPlan,
     guardarGrupoAtleta,
     guardarDisciplinaAtleta,
