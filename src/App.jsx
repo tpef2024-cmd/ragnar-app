@@ -5,6 +5,7 @@ import { useAttendance } from "./hooks/useAttendance";
 import { useCoachData } from "./hooks/useCoachData";
 import { useTiendaCoach } from "./hooks/useTienda";
 import { usePromocionCoach } from "./hooks/usePromocion";
+import { useHybridData } from "./hooks/useHybridData";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
@@ -24,12 +25,13 @@ const TABS_ATLETA = [
   ["rm", "⚡ RMs"],
   ["fortime", "⏱ For Time"],
   ["reps", "🔥 Reps"],
+  ["hibrido", "🔁 Híbrido"],
   ["logros", "🏆 Logros"],
   ["perfil", "👤 Perfil"],
 ];
 
 // Tabs que ve un profe (coach sin is_owner). El dueño ve TABS_COACH completo.
-const TABS_PROFE = ["atletas", "pagos", "grupos"];
+const TABS_PROFE = ["atletas", "pagos", "grupos", "hibrido"];
 
 const TABS_COACH = [
   ["atletas", "Atletas"],
@@ -38,6 +40,7 @@ const TABS_COACH = [
   ["grupos", "Grupos"],
   ["tienda", "Tienda"],
   ["promos", "Promos"],
+  ["hibrido", "Híbrido"],
 ];
 
 export default function App() {
@@ -94,6 +97,18 @@ export default function App() {
   const tabsCoach = esDueno
     ? TABS_COACH
     : TABS_COACH.filter(([key]) => TABS_PROFE.includes(key));
+
+  // Híbrido: los testeos los administran dueño y profes; la tab del atleta
+  // solo aparece si tiene la disciplina complementaria Hybrid (is_hybrid).
+  // En vista coach trae todos los testeos (incluso ocultos) y las marcas de todos.
+  const hybridData = useHybridData(
+    usuario,
+    modo === "athlete" || modo === "coach",
+    modo === "coach",
+  );
+  const tabsAtleta = perfil?.is_hybrid
+    ? TABS_ATLETA
+    : TABS_ATLETA.filter(([key]) => key !== "hibrido");
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
   const athleteData = {
@@ -251,7 +266,7 @@ export default function App() {
               : "Coach"
         }
         nombreUsuario={perfil?.full_name || usuario?.email || "Admin"}
-        tabs={modo === "athlete" ? TABS_ATLETA : tabsCoach}
+        tabs={modo === "athlete" ? tabsAtleta : tabsCoach}
         tabActivo={
           modo === "athlete"
             ? tabAtleta
@@ -286,6 +301,7 @@ export default function App() {
             usuario={usuario}
             athleteData={athleteData}
             attendanceData={attendanceData}
+            hybridData={hybridData}
             guardando={guardando}
             onGuardarPerfil={actualizarPerfil}
           />
@@ -297,6 +313,7 @@ export default function App() {
             coachData={coachData}
             tienda={tienda}
             promociones={promociones}
+            hybridData={hybridData}
             atletaSeleccionado={atletaSeleccionado}
             onSeleccionarAtleta={handleSeleccionarAtleta}
             onVolverALista={handleVolverALista}

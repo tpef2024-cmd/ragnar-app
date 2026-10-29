@@ -31,7 +31,7 @@ export const MOVIMIENTOS_POR_DISCIPLINA = {
   Teens: [],
 };
 
-export const PORCENTAJES = [50, 60, 70, 75, 80, 85, 90, 95, 100];
+export const PORCENTAJES = [40, 50, 55, 60, 65, 70, 72, 75, 80, 82, 85, 90, 92, 95, 98, 100];
 export const DISCIPLINAS = [
   "Crossfit",
   "Funcional",
@@ -41,8 +41,8 @@ export const DISCIPLINAS = [
 ];
 
 // Disciplina complementaria: convive con la disciplina principal del atleta
-// (se guarda aparte, en profiles.is_hybrid). Más adelante va a tener su
-// propia tabla de registros.
+// (se guarda aparte, en profiles.is_hybrid). Sus testeos y marcas viven en
+// hybrid_tests / hybrid_records (ver supabase/migrations/20261029_hibrido.sql).
 export const HYBRID = "Hybrid";
 
 // Disciplinas cuyas cuotas pueden cobrar los profes (no dueños). Tiene que

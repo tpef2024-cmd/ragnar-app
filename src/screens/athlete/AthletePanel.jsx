@@ -4,6 +4,7 @@ import AthleteResumen from "./AthleteResumen";
 import AthleteRM from "./AthleteRM";
 import AthleteForTime from "./AthleteForTime";
 import AthleteReps from "./AthleteReps";
+import AthleteHibrido from "./AthleteHibrido";
 import AthleteLogros from "./AthleteLogros";
 import AthletePerfil from "./AthletePerfil";
 
@@ -21,6 +22,7 @@ export default function AthletePanel({
   usuario,
   athleteData,
   attendanceData,
+  hybridData,
   guardando,
   onGuardarPerfil,
 }) {
@@ -95,6 +97,9 @@ export default function AthletePanel({
           onGuardarReps={guardarReps}
           guardando={guardando}
         />
+      )}
+      {tabAtleta === "hibrido" && perfil?.is_hybrid && (
+        <AthleteHibrido hybridData={hybridData} />
       )}
       {tabAtleta === "logros" && (
         <AthleteLogros

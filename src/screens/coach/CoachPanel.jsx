@@ -5,6 +5,7 @@ import CoachPagos from "./CoachPagos";
 import CoachGrupos from "./CoachGrupos";
 import CoachTienda from "./CoachTienda";
 import CoachPromos from "./CoachPromos";
+import CoachHibrido from "./CoachHibrido";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
 import { puedeManejarPago } from "../../lib/helpers";
 
@@ -13,6 +14,7 @@ export default function CoachPanel({
   coachData,
   tienda,
   promociones,
+  hybridData,
   atletaSeleccionado,
   onSeleccionarAtleta,
   onVolverALista,
@@ -188,6 +190,8 @@ export default function CoachPanel({
       {tabCoach === "tienda" && esDueno && <CoachTienda tienda={tienda} />}
 
       {tabCoach === "promos" && esDueno && <CoachPromos promociones={promociones} />}
+
+      {tabCoach === "hibrido" && <CoachHibrido hybridData={hybridData} />}
     </>
   );
 }
