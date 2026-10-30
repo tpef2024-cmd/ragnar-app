@@ -15,6 +15,16 @@ export function puedeManejarPago(esDueno, atleta) {
   return esDueno || DISCIPLINAS_COBRO_PROFE.includes(atleta?.discipline);
 }
 
+// Cuántos meses por adelantado se puede cobrar una cuota (además del actual)
+export const MESES_ADELANTO = 3;
+
+// Mueve un período { mes: 1-12, anio } n meses (negativo = hacia atrás).
+// Maneja el cambio de año: diciembre + 1 = enero del año siguiente.
+export function moverPeriodo({ mes, anio }, n) {
+  const total = anio * 12 + (mes - 1) + n;
+  return { mes: (total % 12) + 1, anio: Math.floor(total / 12) };
+}
+
 // Devuelve la lista de movimientos de RM que corresponde a una disciplina.
 // Si el atleta todavía no tiene disciplina asignada (perfil nuevo, sin
 // asignar por el coach), se usa Crossfit como fallback para no dejarlo sin

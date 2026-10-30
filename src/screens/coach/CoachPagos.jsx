@@ -3,17 +3,12 @@ import { useState } from "react";
 import CoachPlanes from "./CoachPlanes";
 import CobrarCuota from "./CobrarCuota";
 import { Y } from "../../lib/constants";
+import { MESES_ADELANTO, moverPeriodo } from "../../lib/helpers";
 
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
-
-// Mueve un período { mes, anio } n meses (negativo = hacia atrás)
-const moverPeriodo = ({ mes, anio }, n) => {
-  const total = anio * 12 + (mes - 1) + n;
-  return { mes: (total % 12) + 1, anio: Math.floor(total / 12) };
-};
 
 // Diferencia en meses entre un período y el mes actual (0 = mes actual)
 const mesesDesdeHoy = ({ mes, anio }) => {
@@ -79,16 +74,23 @@ export default function CoachPagos({
   };
 
   // Navegación entre meses: hacia atrás sin límite (cuotas atrasadas) y hasta
-  // un mes hacia adelante (cuotas pagadas por adelantado)
+  // MESES_ADELANTO meses hacia adelante (cuotas pagadas por adelantado). El
+  // pago queda imputado al mes que cubre: suma a los ingresos de ese mes.
   const diferencia = mesesDesdeHoy(periodo);
   const esMesActual = diferencia === 0;
-  const puedeAvanzar = diferencia < 1;
+  const puedeAvanzar = diferencia < MESES_ADELANTO;
   const cambiarMes = (n) => {
     setCobrandoA(null);
     onCambiarPeriodo(moverPeriodo(periodo, n));
   };
   const etiquetaPeriodo =
-    diferencia === 0 ? "Mes actual" : diferencia > 0 ? "Mes próximo" : "Mes anterior";
+    diferencia === 0
+      ? "Mes actual"
+      : diferencia === 1
+        ? "Mes próximo · adelantado"
+        : diferencia > 1
+          ? `En ${diferencia} meses · adelantado`
+          : "Mes anterior";
   const textoSinPago = diferencia < 0 ? "No pagó" : "Cuota pendiente";
 
   return (
@@ -261,7 +263,7 @@ export default function CoachPagos({
                         color: "#4ade80",
                       }}
                     >
-                      ✓ Al día —{" "}
+                      {diferencia > 0 ? "✓ Pagado por adelantado" : "✓ Al día"} —{" "}
                       {detalle?.plan_id
                         ? nombrePlan(detalle.plan_id)
                         : "monto libre"}{" "}
@@ -337,6 +339,7 @@ export default function CoachPagos({
               {cobrandoA === a.id && (
                 <CobrarCuota
                   planes={planes}
+                  periodoTexto={`${MESES[periodo.mes - 1]} ${periodo.anio}${diferencia > 0 ? " (adelantado)" : ""}`}
                   onConfirmar={(datos) => handleConfirmarCobro(a.id, datos)}
                   onCancelar={() => setCobrandoA(null)}
                 />

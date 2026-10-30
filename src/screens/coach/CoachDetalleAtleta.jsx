@@ -6,7 +6,13 @@ import {
   Y,
   BORDER,
 } from "../../lib/constants";
-import { obtenerRMDeLista, movimientosDeDisciplina, etiquetaGrupo } from "../../lib/helpers";
+import {
+  obtenerRMDeLista,
+  movimientosDeDisciplina,
+  etiquetaGrupo,
+  MESES_ADELANTO,
+  moverPeriodo,
+} from "../../lib/helpers";
 import SelectorGrupo from "../../components/shared/SelectorGrupo";
 import SeccionNotas from "../../components/shared/SeccionNotas";
 import { useNotas } from "../../hooks/useNotas";
@@ -69,9 +75,10 @@ export default function CoachDetalleAtleta({
   onGuardarHybrid,
   esDueno = false, // los profes ven grupo/disciplina en modo solo lectura
   usuarioId,
-  // Pago del mes actual (solo si este usuario puede manejar el pago del atleta)
+  // Cuotas del mes actual y adelantadas (solo si este usuario puede manejar
+  // el pago del atleta)
   puedeVerPago = false,
-  pagoDelMes,
+  cargarPagosAtleta,
   planes = [],
   onCobrarCuota,
   onRevertirPago,
@@ -85,20 +92,65 @@ export default function CoachDetalleAtleta({
   const [cobrando, setCobrando] = useState(false);
   const notas = useNotas(atleta.id);
 
-  // El cobro desde el detalle siempre es del mes actual
+  // ── CUOTAS: mes actual + hasta MESES_ADELANTO meses por adelantado ────────
+  // Cada pago queda imputado al mes que cubre (y suma a los ingresos de ese
+  // mes), no al mes en que se cobró.
   const hoy = new Date();
   const periodoActual = { mes: hoy.getMonth() + 1, anio: hoy.getFullYear() };
-  const pago = pagoDelMes?.(atleta.id);
+  const periodosCuota = Array.from({ length: MESES_ADELANTO + 1 }, (_, i) =>
+    moverPeriodo(periodoActual, i),
+  );
+  const [mesCuota, setMesCuota] = useState(0); // 0 = mes actual, 1..3 = adelantado
+  const [pagosAtleta, setPagosAtleta] = useState([]);
+  const [errorCobro, setErrorCobro] = useState("");
+  const periodoSel = periodosCuota[mesCuota];
+  const pagoDe = (per) =>
+    pagosAtleta.find((p) => p.period_month === per.mes && p.period_year === per.anio);
+  const pago = pagoDe(periodoSel);
   const nombrePlan = (planId) => planes.find((p) => p.id === planId)?.name;
+  const nombreMes = (per) =>
+    `${MESES[per.mes - 1]}${per.anio !== periodoActual.anio ? ` ${per.anio}` : ""}`;
+
+  const recargarPagosAtleta = async () => {
+    if (puedeVerPago && cargarPagosAtleta) setPagosAtleta(await cargarPagosAtleta(atleta.id));
+  };
+
+  useEffect(() => {
+    let activo = true;
+    if (puedeVerPago && cargarPagosAtleta) {
+      cargarPagosAtleta(atleta.id).then((data) => {
+        if (activo) setPagosAtleta(data);
+      });
+    }
+    return () => {
+      activo = false;
+    };
+  }, [atleta.id, puedeVerPago, cargarPagosAtleta]);
+
+  const elegirMesCuota = (i) => {
+    setMesCuota(i);
+    setCobrando(false);
+    setErrorCobro("");
+  };
 
   const handleCobrar = async (datos) => {
-    await onCobrarCuota(atleta.id, datos, periodoActual);
+    setErrorCobro("");
+    const res = await onCobrarCuota(atleta.id, datos, periodoSel);
+    if (res && !res.ok) {
+      setErrorCobro(
+        res.duplicado
+          ? `${nombreMes(periodoSel)} ya estaba pagado.`
+          : "No se pudo registrar el cobro. Probá de nuevo.",
+      );
+    }
+    await recargarPagosAtleta();
     setCobrando(false);
   };
 
   const handleRevertir = async () => {
-    if (!window.confirm(`¿Revertir el pago de ${MESES[periodoActual.mes - 1]} de ${atleta.full_name}?`)) return;
-    await onRevertirPago(atleta.id, periodoActual);
+    if (!window.confirm(`¿Revertir el pago de ${nombreMes(periodoSel)} de ${atleta.full_name}?`)) return;
+    await onRevertirPago(atleta.id, periodoSel);
+    await recargarPagosAtleta();
   };
   const [movAtleta, setMovAtleta] = useState("Back Squat");
   const [asignandoGrupo, setAsignandoGrupo] = useState(false);
@@ -224,14 +276,40 @@ export default function CoachDetalleAtleta({
         )}
       </div>
 
-      {/* Cuota del mes actual */}
+      {/* Cuotas: mes actual + adelantadas */}
       {puedeVerPago && (
-        <div className="card" style={{ marginBottom: 16, borderColor: pago ? undefined : "#7f1d1d" }}>
-          <div style={estiloTitulo}>Cuota de {MESES[periodoActual.mes - 1]}</div>
+        <div
+          className="card"
+          style={{ marginBottom: 16, borderColor: pago || mesCuota > 0 ? undefined : "#7f1d1d" }}
+        >
+          <div style={estiloTitulo}>Cuotas</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+            {periodosCuota.map((per, i) => {
+              const pagado = !!pagoDe(per);
+              return (
+                <button
+                  key={`${per.anio}-${per.mes}`}
+                  className={`chip-disc ${mesCuota === i ? "on" : ""}`}
+                  onClick={() => elegirMesCuota(i)}
+                  title={i === 0 ? "Mes actual" : "Pago por adelantado"}
+                >
+                  {nombreMes(per).slice(0, 3)}
+                  {per.anio !== periodoActual.anio ? ` ${String(per.anio).slice(2)}` : ""}{" "}
+                  <span style={{ color: pagado ? "#4ade80" : i === 0 ? "#f87171" : "#555" }}>
+                    {pagado ? "✓" : "·"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#7a7a7a", textTransform: "uppercase", marginBottom: 8 }}>
+            {nombreMes(periodoSel)}
+            {mesCuota > 0 ? " · adelantado" : " · mes actual"}
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             {pago ? (
               <div style={{ fontSize: 10, letterSpacing: 1, color: "#4ade80" }}>
-                ✓ Al día — {pago.plan_id ? nombrePlan(pago.plan_id) : "monto libre"} · $
+                {mesCuota > 0 ? "✓ Pagado" : "✓ Al día"} — {pago.plan_id ? nombrePlan(pago.plan_id) : "monto libre"} · $
                 {Number(pago.amount || 0).toLocaleString("es-AR")}
                 {pago.payment_method && (
                   <span style={{ color: "#7a7a7a" }}>
@@ -240,7 +318,9 @@ export default function CoachDetalleAtleta({
                 )}
               </div>
             ) : (
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "#f87171" }}>Cuota pendiente</div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: mesCuota > 0 ? "#7a7a7a" : "#f87171" }}>
+                {mesCuota > 0 ? "Sin pagar todavía" : "Cuota pendiente"}
+              </div>
             )}
             {pago ? (
               <button
@@ -281,10 +361,14 @@ export default function CoachDetalleAtleta({
               </button>
             )}
           </div>
+          {errorCobro && (
+            <div style={{ color: "#f87171", fontSize: 10, letterSpacing: 1, marginTop: 8 }}>{errorCobro}</div>
+          )}
           {cobrando && !pago && (
             <CobrarCuota
+              key={`${periodoSel.anio}-${periodoSel.mes}`}
               planes={planes}
-              periodoTexto={MESES[periodoActual.mes - 1]}
+              periodoTexto={`${nombreMes(periodoSel)}${mesCuota > 0 ? " (adelantado)" : ""}`}
               onConfirmar={handleCobrar}
               onCancelar={() => setCobrando(false)}
             />

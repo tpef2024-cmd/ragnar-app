@@ -37,7 +37,7 @@ export default function CoachPanel({
     ingresosPeriodo,
     cobrarCuota,
     revertirPago,
-    pagoDelMes,
+    cargarPagosAtleta,
     crearAtleta,
     cargarAsistenciaAtleta,
     cargarUltimaAsistencia,
@@ -137,7 +137,7 @@ export default function CoachPanel({
                 esDueno={esDueno}
                 usuarioId={usuarioId}
                 puedeVerPago={verPago(atletaSeleccionado)}
-                pagoDelMes={pagoDelMes}
+                cargarPagosAtleta={cargarPagosAtleta}
                 planes={planes}
                 onCobrarCuota={cobrarCuota}
                 onRevertirPago={revertirPago}
@@ -191,7 +191,7 @@ export default function CoachPanel({
 
       {tabCoach === "promos" && esDueno && <CoachPromos promociones={promociones} />}
 
-      {tabCoach === "hibrido" && <CoachHibrido hybridData={hybridData} />}
+      {tabCoach === "hibrido" && <CoachHibrido hybridData={hybridData} atletas={atletas} />}
     </>
   );
 }

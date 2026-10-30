@@ -216,14 +216,16 @@ export function useCoachData(usuario, activo) {
   // monto libre tipeado por el coach. Por defecto el pago se imputa al mes
   // elegido en la tab Pagos (no al mes en que se cobra), así una cuota de
   // septiembre cobrada el 3 de octubre queda registrada como septiembre.
-  // Desde el detalle del atleta se pasa `periodo` = mes actual.
+  // Desde el detalle del atleta se pasa el `periodo` elegido ahí (mes actual
+  // o hasta MESES_ADELANTO meses adelante).
+  // Devuelve { ok, duplicado }.
   // Evita duplicar el pago del mismo mes (además del índice único en la base).
   const cobrarCuota = async (
     atletaId,
     { planId = null, monto, metodo = null },
     periodo = periodoPagos,
   ) => {
-    if (yaPagado(atletaId, periodo)) return;
+    if (yaPagado(atletaId, periodo)) return { ok: false, duplicado: true };
 
     const montoFinal = Number(monto) || 0;
     const nuevoPago = {
@@ -244,7 +246,7 @@ export function useCoachData(usuario, activo) {
       setPagos((prev) => [...prev, nuevoPago]);
     }
 
-    await supabase.from("payments").insert({
+    const { error } = await supabase.from("payments").insert({
       ...nuevoPago,
       method: "manual",
       registered_by: usuario.id,
@@ -253,6 +255,7 @@ export function useCoachData(usuario, activo) {
     // Recargar desde la base: si el insert falló (ej. pago duplicado), la
     // pantalla vuelve a mostrar el estado real
     await Promise.all([cargarPagos(), cargarPagosPeriodo(periodoPagos)]);
+    return { ok: !error, duplicado: error?.code === "23505" };
   };
 
   // Revertir el pago de un atleta en un mes (por defecto el elegido en la
@@ -279,6 +282,21 @@ export function useCoachData(usuario, activo) {
 
   // Detalle del pago del mes actual de un atleta (para el detalle del atleta)
   const pagoDelMes = (atletaId) => pagos.find((p) => p.athlete_id === atletaId);
+
+  // Pagos de un atleta desde el mes actual en adelante (mes actual + los que
+  // haya pagado por adelantado). Lo usa el detalle del atleta para mostrar y
+  // cobrar cuotas de los próximos meses.
+  const cargarPagosAtleta = useCallback(async (atletaId) => {
+    const { mes, anio } = periodoActual();
+    const desde = anio * 12 + mes;
+    const { data } = await supabase
+      .from("payments")
+      .select("athlete_id, status, amount, plan_id, payment_method, period_month, period_year")
+      .eq("athlete_id", atletaId)
+      .eq("status", "paid")
+      .gte("period_year", anio);
+    return (data || []).filter((p) => p.period_year * 12 + p.period_month >= desde);
+  }, []);
 
   // Dar de alta un atleta desde el panel (Kids sin celular, Adultos Mayores,
   // etc.). Lo hace la Edge Function "crear-atleta", porque crear un usuario
@@ -406,6 +424,7 @@ export function useCoachData(usuario, activo) {
     cobrarCuota,
     revertirPago,
     pagoDelMes,
+    cargarPagosAtleta,
     crearAtleta,
     cargarAsistenciaAtleta,
     cargarUltimaAsistencia,

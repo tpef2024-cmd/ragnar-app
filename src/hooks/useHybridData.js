@@ -1,7 +1,8 @@
 // ── HOOK: DATOS HÍBRIDO ───────────────────────────────────────────────────────
 // Testeos híbridos (los administra el coach) + marcas de los atletas en segundos.
 //  - Atleta: ve los testeos activos, carga sus marcas y ve su historial.
-//  - Coach: crea/renombra/activa/desactiva testeos y ve las marcas de todos.
+//  - Coach: crea/renombra/activa/desactiva testeos, ve las marcas de todos y
+//    puede cargar marcas de cualquier atleta (con la fecha del testeo).
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 
@@ -86,6 +87,25 @@ export function useHybridData(usuario, activo, esCoach = false) {
   };
 
   // ── Acciones del coach ─────────────────────────────────────────────────────
+  // Cargar la marca de un atleta (ej. testeo hecho en clase). `fecha` es
+  // "YYYY-MM-DD" (el día del testeo); se guarda al mediodía hora local para
+  // que la zona horaria no la corra al día anterior. Devuelve { ok, esPR }.
+  const guardarMarcaAtleta = async (atletaId, testId, segundos, fecha) => {
+    const anterior = mejorMarca(testId, atletaId);
+    const recordedAt = fecha
+      ? new Date(`${fecha}T12:00:00`).toISOString()
+      : new Date().toISOString();
+    const { error } = await supabase.from("hybrid_records").insert({
+      athlete_id: atletaId,
+      test_id: testId,
+      time_seconds: segundos,
+      recorded_at: recordedAt,
+    });
+    if (error) return { ok: false };
+    await cargarMarcas();
+    return { ok: true, esPR: anterior == null || segundos < anterior };
+  };
+
   const crearTesteo = async (nombre) => {
     const limpio = nombre.trim();
     if (!limpio) return "Ingresá un nombre";
@@ -125,6 +145,7 @@ export function useHybridData(usuario, activo, esCoach = false) {
     ranking,
     guardarMarca,
     borrarMarca,
+    guardarMarcaAtleta,
     crearTesteo,
     renombrarTesteo,
     alternarActivoTesteo,
