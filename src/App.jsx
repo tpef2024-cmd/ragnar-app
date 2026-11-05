@@ -6,6 +6,7 @@ import { useCoachData } from "./hooks/useCoachData";
 import { useTiendaCoach } from "./hooks/useTienda";
 import { usePromocionCoach } from "./hooks/usePromocion";
 import { useHybridData } from "./hooks/useHybridData";
+import { useRagnerosAdmin } from "./hooks/useRagnerosAdmin";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
@@ -16,6 +17,9 @@ import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import AppShell from "./components/layout/AppShell";
 import AthletePanel from "./screens/athlete/AthletePanel";
 import CoachPanel from "./screens/coach/CoachPanel";
+import AthleteBeneficios from "./screens/athlete/AthleteBeneficios";
+import MerchantPanel from "./screens/merchant/MerchantPanel";
+import { TABS_COMERCIO, esTabComercio } from "./screens/merchant/tabsComercio";
 import TarjetaLogro from "./components/shared/TarjetaLogro";
 import InactivityWarningModal from "./components/shared/InactivityWarningModal";
 
@@ -27,6 +31,7 @@ const TABS_ATLETA = [
   ["reps", "🔥 Reps"],
   ["hibrido", "🔁 Híbrido"],
   ["logros", "🏆 Logros"],
+  ["beneficios", "🎟 Beneficios"],
   ["perfil", "👤 Perfil"],
 ];
 
@@ -41,6 +46,7 @@ const TABS_COACH = [
   ["tienda", "Tienda"],
   ["promos", "Promos"],
   ["hibrido", "Híbrido"],
+  ["ragneros", "Ragneros"],
 ];
 
 export default function App() {
@@ -48,9 +54,12 @@ export default function App() {
     pantalla,
     usuario,
     perfil,
+    comercio,
+    recargarComercio,
     cargando,
     login,
     registrar,
+    registrarComercio,
     logout,
     enviarRecuperacion,
     actualizarPassword,
@@ -83,6 +92,7 @@ export default function App() {
   const [tabAtleta, setTabAtleta] = useState("resumen");
   const [movSeleccionado, setMovSeleccionado] = useState("Back Squat");
   const [tabCoach, setTabCoach] = useState("atletas");
+  const [tabComercio, setTabComercio] = useState("escanear");
   const [atletaSeleccionado, setAtletaSeleccionado] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -94,6 +104,8 @@ export default function App() {
   const coachData = useCoachData(usuario, pantalla === "coach");
   const tienda = useTiendaCoach(usuario, esDueno);
   const promociones = usePromocionCoach(usuario, esDueno);
+  // Comercios Ragneros y descuentos: los administran solo los dueños
+  const ragnerosData = useRagnerosAdmin(usuario, esDueno && modo === "coach");
   const tabsCoach = esDueno
     ? TABS_COACH
     : TABS_COACH.filter(([key]) => TABS_PROFE.includes(key));
@@ -106,9 +118,13 @@ export default function App() {
     modo === "athlete" || modo === "coach",
     modo === "coach",
   );
-  const tabsAtleta = perfil?.is_hybrid
-    ? TABS_ATLETA
-    : TABS_ATLETA.filter(([key]) => key !== "hibrido");
+  // Un atleta (o profe en su vista de atleta) con comercio Ragnero aprobado
+  // suma las tabs de comercio: Escanear / Canjes / Mi comercio.
+  const tieneComercio = comercio?.status === "approved";
+  const tabsAtleta = [
+    ...(perfil?.is_hybrid ? TABS_ATLETA : TABS_ATLETA.filter(([key]) => key !== "hibrido")),
+    ...(tieneComercio ? TABS_COMERCIO : []),
+  ];
 
   // Envuelve las acciones de guardado para mostrar el spinner mientras corren
   const athleteData = {
@@ -138,13 +154,14 @@ export default function App() {
   };
 
   // ── CIERRE DE SESIÓN POR INACTIVIDAD ─────────────────────────────────────
-  const sesionActiva = pantalla === "athlete" || pantalla === "coach";
+  const sesionActiva = pantalla === "athlete" || pantalla === "coach" || pantalla === "merchant";
   const { avisoVisible, segundosRestantes, seguirConectado } =
     useInactivityLogout(sesionActiva, logout);
 
   // ── NAVEGACIÓN: volver al inicio al clickear el logo ────────────────────
   const handleLogoClick = () => {
     if (modo === "athlete") setTabAtleta("resumen");
+    if (modo === "merchant") setTabComercio("escanear");
     if (modo === "coach") {
       setTabCoach("atletas");
       setAtletaSeleccionado(null);
@@ -225,6 +242,7 @@ export default function App() {
         <LoginScreen
           onLogin={login}
           onRegistro={registrar}
+          onRegistroComercio={registrarComercio}
           onEnviarRecuperacion={enviarRecuperacion}
         />
       </>
@@ -246,7 +264,7 @@ export default function App() {
     return (
       <>
         <style>{globalStyles}</style>
-        <EstadoCuentaScreen estado={pantalla} onSalir={logout} />
+        <EstadoCuentaScreen estado={pantalla} esComercio={perfil?.role === "merchant"} onSalir={logout} />
       </>
     );
   }
@@ -257,24 +275,30 @@ export default function App() {
       <style>{globalStyles}</style>
       <AppShell
         rolLabel={
-          modo === "athlete"
-            ? pantalla === "coach"
-              ? "Modo atleta"
-              : "Atleta"
-            : esDueno
-              ? "Dueño"
-              : "Coach"
+          modo === "merchant"
+            ? "Comercio Ragnero"
+            : modo === "athlete"
+              ? pantalla === "coach"
+                ? "Modo atleta"
+                : tieneComercio
+                  ? "Atleta · Ragnero"
+                  : "Atleta"
+              : esDueno
+                ? "Dueño"
+                : "Coach"
         }
         nombreUsuario={perfil?.full_name || usuario?.email || "Admin"}
-        tabs={modo === "athlete" ? tabsAtleta : tabsCoach}
+        tabs={modo === "merchant" ? TABS_COMERCIO : modo === "athlete" ? tabsAtleta : tabsCoach}
         tabActivo={
-          modo === "athlete"
-            ? tabAtleta
-            : tabCoach === "detalle_atleta"
-              ? "atletas"
-              : tabCoach
+          modo === "merchant"
+            ? tabComercio
+            : modo === "athlete"
+              ? tabAtleta
+              : tabCoach === "detalle_atleta"
+                ? "atletas"
+                : tabCoach
         }
-        onCambiarTab={modo === "athlete" ? setTabAtleta : setTabCoach}
+        onCambiarTab={modo === "merchant" ? setTabComercio : modo === "athlete" ? setTabAtleta : setTabCoach}
         onLogoClick={handleLogoClick}
         onSalir={logout}
         vistaAlternativa={
@@ -286,8 +310,11 @@ export default function App() {
         }
         onCambiarVista={cambiarVistaCoach}
         badges={
-          modo === "coach" && esDueno && coachData.pendientes.length > 0
-            ? { solicitudes: coachData.pendientes.length }
+          modo === "coach" && esDueno
+            ? {
+                ...(coachData.pendientes.length > 0 && { solicitudes: coachData.pendientes.length }),
+                ...(ragnerosData.pendientes.length > 0 && { ragneros: ragnerosData.pendientes.length }),
+              }
             : {}
         }
       >
@@ -307,6 +334,21 @@ export default function App() {
           />
         )}
 
+        {modo === "athlete" && tabAtleta === "beneficios" && (
+          <AthleteBeneficios
+            usuario={usuario}
+            perfil={perfil}
+            comercio={comercio}
+            onComercioSolicitado={recargarComercio}
+          />
+        )}
+
+        {/* Tabs de comercio: para la cuenta comercio, o el atleta con comercio aprobado */}
+        {modo === "merchant" && <MerchantPanel tab={tabComercio} usuario={usuario} />}
+        {modo === "athlete" && tieneComercio && esTabComercio(tabAtleta) && (
+          <MerchantPanel tab={tabAtleta} usuario={usuario} />
+        )}
+
         {modo === "coach" && (
           <CoachPanel
             tabCoach={tabCoach}
@@ -314,6 +356,7 @@ export default function App() {
             tienda={tienda}
             promociones={promociones}
             hybridData={hybridData}
+            ragnerosData={ragnerosData}
             atletaSeleccionado={atletaSeleccionado}
             onSeleccionarAtleta={handleSeleccionarAtleta}
             onVolverALista={handleVolverALista}

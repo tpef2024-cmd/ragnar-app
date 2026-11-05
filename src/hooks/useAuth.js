@@ -1,14 +1,34 @@
 // ── HOOK: AUTENTICACIÓN ────────────────────────────────────────────────────────
 // Maneja sesión de Supabase, perfil del usuario, login, registro y logout.
+//
+// Tipos de cuenta:
+//   - athlete  → panel de atleta.
+//   - coach    → panel coach (dueño o profe), con su vista de atleta.
+//   - merchant → comercio Ragnero que NO entrena (se registró con "Quiero ser
+//                comercio Ragnero"). Ve solo Escanear / Canjes / Mi comercio.
+// Un atleta o profe también puede tener un comercio: `comercio` trae el suyo
+// (en cualquier estado) y, si está aprobado, App suma las tabs de comercio.
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export function useAuth() {
-  // "login" | "athlete" | "coach" | "pendiente" | "revocado" | "recuperar_password"
+  // "login" | "athlete" | "coach" | "merchant" | "pendiente" | "revocado" | "recuperar_password"
   const [pantalla, setPantalla] = useState("login");
   const [usuario, setUsuario] = useState(null);
   const [perfil, setPerfil] = useState(null);
+  // Comercio Ragnero del usuario (cualquier estado) o null si no tiene
+  const [comercio, setComercio] = useState(null);
   const [cargando, setCargando] = useState(true);
+
+  const cargarComercio = useCallback(async (userId) => {
+    const { data } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("owner_id", userId)
+      .maybeSingle();
+    setComercio(data || null);
+    return data || null;
+  }, []);
 
   // Cargar perfil del usuario y redirigir según rol y estado de aprobación.
   // Un atleta con status "pending" o "revoked" no entra al panel: se lo manda
@@ -21,16 +41,21 @@ export function useAuth() {
       .eq("id", u.id)
       .single();
     setPerfil(prof);
+    await cargarComercio(u.id);
 
     if (prof?.status === "pending") {
       setPantalla("pendiente");
     } else if (prof?.status === "revoked") {
       setPantalla("revocado");
+    } else if (prof?.role === "coach") {
+      setPantalla("coach");
+    } else if (prof?.role === "merchant") {
+      setPantalla("merchant");
     } else {
-      setPantalla(prof?.role === "coach" ? "coach" : "athlete");
+      setPantalla("athlete");
     }
     setCargando(false);
-  }, []);
+  }, [cargarComercio]);
 
   // Verificar sesión activa al cargar la app y escuchar cambios de sesión
   useEffect(() => {
@@ -72,6 +97,7 @@ export function useAuth() {
       else {
         setUsuario(null);
         setPerfil(null);
+        setComercio(null);
         setPantalla("login");
         setCargando(false);
       }
@@ -137,6 +163,47 @@ export function useAuth() {
     [cargarUsuario],
   );
 
+  // Registrar un comercio Ragnero nuevo (usuario que NO entrena en Ragnar).
+  // El perfil (role "merchant") y el comercio (status "pending") los crea el
+  // trigger on_auth_user_created_comercio en la base — ver
+  // supabase/migrations/20261105_ragneros_beneficios.sql. Queda pendiente
+  // hasta que un dueño lo apruebe desde la tab Ragneros.
+  const registrarComercio = useCallback(
+    async (email, password, nombreCompleto, { nombreComercio, rubro, telefono }) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: nombreCompleto,
+            account_type: "merchant",
+            business_name: nombreComercio,
+            business_category: rubro || null,
+            business_phone: telefono || null,
+          },
+          emailRedirectTo: `${window.location.origin}/app`,
+        },
+      });
+      if (error) return { error: error.message };
+      if (data.session) {
+        await cargarUsuario(data.session.user);
+        return { error: null };
+      }
+      return {
+        error: null,
+        mensaje:
+          "Te enviamos un email de confirmación. Revisá tu bandeja de entrada (y spam) y confirmá tu cuenta. Después, Ragnar tiene que aprobar tu comercio.",
+      };
+    },
+    [cargarUsuario],
+  );
+
+  // Volver a leer el comercio (después de pedir el alta desde Beneficios)
+  const recargarComercio = useCallback(
+    () => (usuario ? cargarComercio(usuario.id) : Promise.resolve(null)),
+    [usuario, cargarComercio],
+  );
+
   // Cerrar sesión
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -198,9 +265,12 @@ export function useAuth() {
     usuario,
     perfil,
     setPerfil,
+    comercio,
+    recargarComercio,
     cargando,
     login,
     registrar,
+    registrarComercio,
     logout,
     enviarRecuperacion,
     actualizarPassword,

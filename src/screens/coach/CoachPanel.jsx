@@ -7,6 +7,7 @@ import CoachTienda from "./CoachTienda";
 import CoachPromos from "./CoachPromos";
 import CoachHibrido from "./CoachHibrido";
 import CoachDetalleAtleta from "./CoachDetalleAtleta";
+import CoachRagneros from "./CoachRagneros";
 import { puedeManejarPago } from "../../lib/helpers";
 
 export default function CoachPanel({
@@ -15,6 +16,7 @@ export default function CoachPanel({
   tienda,
   promociones,
   hybridData,
+  ragnerosData,
   atletaSeleccionado,
   onSeleccionarAtleta,
   onVolverALista,
@@ -192,6 +194,9 @@ export default function CoachPanel({
       {tabCoach === "promos" && esDueno && <CoachPromos promociones={promociones} />}
 
       {tabCoach === "hibrido" && <CoachHibrido hybridData={hybridData} atletas={atletas} />}
+
+      {/* Comercios Ragneros y sus descuentos: solo dueños */}
+      {tabCoach === "ragneros" && esDueno && <CoachRagneros ragnerosData={ragnerosData} />}
     </>
   );
 }

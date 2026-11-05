@@ -1,10 +1,87 @@
 // ── ESTILOS GLOBALES ──────────────────────────────────────────────────────────
-// Incluye: paleta con más contraste (Fase 1 - feedback profes) y layout
-// responsive (sidebar en desktop, barra superior en mobile).
+// Incluye: paleta con más contraste (Fase 1 - feedback profes), layout
+// responsive (sidebar en desktop, barra superior en mobile), y al final las
+// pruebas de legibilidad para adultos mayores (ALTO_CONTRASTE y
+// FUENTE_LEGIBLE), que van últimas para ganarle al resto.
 import { Y, CARD, BORDER, DESKTOP_BREAKPOINT_PX } from "../lib/constants";
 
+// ── LEGIBILIDAD (prueba 05/11/2026 — pedido para adultos mayores) ───────────
+// Las dos se prenden/apagan por separado cambiando true ⇄ false.
+
+// 1) ALTO_CONTRASTE: pasa a blanco los textos grises de TODA la app sin tocar
+//    cada pantalla (los grises están escritos inline en cada componente).
+export const ALTO_CONTRASTE = true;
+
+// 2) FUENTE_LEGIBLE: reemplaza DM Mono (monoespaciada, chica y muy espaciada)
+//    por Atkinson Hyperlegible, diseñada por el Braille Institute para personas
+//    con baja visión: distingue bien 0/O, 1/l/I, rn/m. Bebas Neue queda para
+//    títulos y números grandes (es la identidad de Ragnar y grande se lee bien).
+export const FUENTE_LEGIBLE = true;
+
+const FUENTE_TEXTO = "'Atkinson Hyperlegible', system-ui, sans-serif";
+
+// Grises usados como color de texto inline → blanco
+const GRISES_A_BLANCO = ["#555", "#666", "#777", "#7a7a7a", "#888", "#999", "#aaa", "#b3b3b3", "#bbb", "#ccc", "#ddd"];
+// Grises muy oscuros (estados vacíos, el "—" de un RM sin cargar) → gris claro:
+// se leen, pero siguen marcando que no hay dato
+const GRISES_A_CLARO = ["#333", "#444"];
+
+// React escribe style={{ color: "#999" }} como  style="...; color: rgb(153, 153, 153); ..."
+// Se busca "color: rgb(...)" al inicio o después de "; " para no tocar
+// border-color ni background-color.
+const aRgb = (hex) => {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  return `rgb(${parseInt(full.slice(0, 2), 16)}, ${parseInt(full.slice(2, 4), 16)}, ${parseInt(full.slice(4, 6), 16)})`;
+};
+const selectoresColor = (lista) =>
+  lista
+    .map(aRgb)
+    .flatMap((rgb) => [`[style^="color: ${rgb}"]`, `[style*="; color: ${rgb}"]`])
+    .join(",\n  ");
+
+const estilosAltoContraste = `
+  /* ── ALTO CONTRASTE ─────────────────────────────────────────────────── */
+  ${selectoresColor(GRISES_A_BLANCO)} { color: #ffffff !important; }
+  ${selectoresColor(GRISES_A_CLARO)} { color: #bbbbbb !important; }
+
+  /* Tarjetas atenuadas (cupones usados, historial, descuentos pausados):
+     menos transparencia para que el texto no vuelva a quedar gris */
+  [style*="opacity: 0.5"], [style*="opacity: 0.55"], [style*="opacity: 0.6"], [style*="opacity: 0.7"] {
+    opacity: 0.85 !important;
+  }
+
+  /* Clases con texto gris */
+  .tab, .sidebar-tab, .mov, .chip-disc, .btn-salir { color: #ffffff; }
+  .tab.on, .sidebar-tab.on, .mov.on, .chip-disc.on { color: ${Y}; }
+  .btn-salir { border-color: #666; }
+  .inp::placeholder { color: #bbbbbb; }   /* más claro, pero distinto del texto ya escrito */
+  .btn-y:disabled { color: #dddddd; }
+`;
+
+const estilosFuenteLegible = `
+  /* ── FUENTE LEGIBLE ─────────────────────────────────────────────────── */
+  /* Fuente base (antes, el texto sin fuente propia usaba la del sistema) */
+  body, button, input, textarea, select { font-family: ${FUENTE_TEXTO}; }
+
+  /* Textos que tenían DM Mono, escrita inline en las pantallas o en clases */
+  [style*="DM Mono"] { font-family: ${FUENTE_TEXTO} !important; }
+  .tab, .sidebar-tab, .mov, .inp, .btn-salir, .chip-disc, .tab-badge, .btn-ragnero {
+    font-family: ${FUENTE_TEXTO};
+    letter-spacing: 0.5px;
+  }
+
+  /* El espaciado ancho (2-4px) servía para la letra monoespaciada; con esta
+     fuente separa demasiado las letras. Bebas Neue conserva el suyo. */
+  [style*="letter-spacing: 2px"]:not([style*="Bebas"]),
+  [style*="letter-spacing: 3px"]:not([style*="Bebas"]),
+  [style*="letter-spacing: 4px"]:not([style*="Bebas"]) {
+    letter-spacing: 0.5px !important;
+  }
+`;
+
 export const globalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue${FUENTE_LEGIBLE ? "&family=Atkinson+Hyperlegible:wght@400;700" : ""}&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-thumb{background:${Y}}
@@ -49,6 +126,19 @@ export const globalStyles = `
   .fu{animation:fadeUp .3s ease forwards}
   @keyframes spin{to{transform:rotate(360deg)}}
   .spin{animation:spin .8s linear infinite;display:inline-block}
+
+  /* ── RAGNEROS / BENEFICIOS ───────────────────────────────────────────── */
+  .btn-ragnero{width:100%;margin-top:16px;padding:14px;display:flex;align-items:center;justify-content:center;gap:10px;
+    background:#1a1500;border:1px solid ${Y};border-radius:2px;color:${Y};
+    font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+  .btn-ragnero:hover{background:${Y};color:#0a0a0a}
+  .grid-beneficios{display:grid;grid-template-columns:1fr;gap:8px}
+  .card-beneficio{cursor:pointer;transition:border-color .15s, transform .15s}
+  .card-beneficio:hover{border-color:${Y};transform:translateY(-1px)}
+  .lector-qr{width:100%;max-width:420px;margin:0 auto;aspect-ratio:1/1;background:#000;
+    border:1px solid ${BORDER};border-radius:2px;overflow:hidden}
+  .lector-qr video{width:100% !important;height:100% !important;object-fit:cover}
+  .inp[type="date"]{color-scheme:dark}
 
   /* ── LAYOUT: APP SHELL ──────────────────────────────────────────────────── */
   html, body, #root { height: 100%; }
@@ -170,6 +260,7 @@ export const globalStyles = `
     /* Grillas de tarjetas: más columnas al haber más espacio disponible */
     .grid-2 { grid-template-columns: repeat(4, 1fr) !important; }
     .grid-3 { grid-template-columns: repeat(3, 1fr) !important; max-width: 480px; }
+    .grid-beneficios { grid-template-columns: repeat(3, 1fr); }
 
     /* Vista de coach: lista de atletas a la izquierda, detalle a la derecha —
        ambas visibles siempre en desktop, sin importar qué tab de navegación esté activo */
@@ -182,4 +273,7 @@ export const globalStyles = `
     .coach-list-pane { display: block !important; }
     .coach-detail-pane { display: block !important; }
   }
+
+  ${FUENTE_LEGIBLE ? estilosFuenteLegible : ""}
+  ${ALTO_CONTRASTE ? estilosAltoContraste : ""}
 `;

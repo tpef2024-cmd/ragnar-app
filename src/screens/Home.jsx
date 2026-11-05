@@ -207,6 +207,15 @@ export default function Home() {
             descripcion="Ingresá con tu cuenta para ver tus marcas, asistencia y más."
           />
         </div>
+
+        {/* Comercios Ragneros: alta de comercios que ofrecen descuentos a los
+            atletas. Abre la app directo en el formulario de comercio. */}
+        <Link to="/app?comercio=1" className="btn-ragnero" style={{ textDecoration: "none" }}>
+          <span style={{ fontSize: 16 }}>🏪</span> Quiero ser comercio Ragnero
+        </Link>
+        <div style={{ fontSize: 10, color: "#999", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
+          ¿Tenés un negocio? Ofrecé descuentos exclusivos a los atletas de Ragnar.
+        </div>
       </div>
 
       {/* Contenido informativo */}
