@@ -2,7 +2,8 @@
 // Se muestra en vez del panel de atleta cuando su profile.status no es
 // "approved" — es decir, todavía no fue autorizado por el coach, o se le
 // revocó el acceso. El atleta no puede navegar a ningún otro lado desde acá
-// más que cerrar sesión.
+// más que cerrar sesión. Los comercios Ragneros (role "merchant") ven un
+// texto propio: su acceso sigue al estado del comercio.
 import LogoRagnar from "../components/shared/LogoRagnar";
 import { Y } from "../lib/constants";
 
@@ -19,10 +20,23 @@ const CONTENIDO = {
     texto:
       "Tu acceso a la app fue revocado. Si creés que se trata de un error, consultá directamente con el gimnasio.",
   },
+  pendiente_comercio: {
+    icono: "🏪",
+    titulo: "SOLICITUD EN REVISIÓN",
+    texto:
+      "Recibimos la solicitud de tu comercio. El equipo de Ragnar se va a contactar con vos para acordar el descuento — cuando aprueben el alta vas a poder cargar tu logo, tu info y escanear cupones.",
+  },
+  revocado_comercio: {
+    icono: "🚫",
+    titulo: "COMERCIO NO HABILITADO",
+    texto:
+      "Tu comercio no está habilitado en este momento para recibir cupones. Si creés que se trata de un error, consultá directamente con el gimnasio.",
+  },
 };
 
-export default function EstadoCuentaScreen({ estado, onSalir }) {
-  const { icono, titulo, texto } = CONTENIDO[estado] || CONTENIDO.pendiente;
+export default function EstadoCuentaScreen({ estado, esComercio = false, onSalir }) {
+  const clave = esComercio ? `${estado}_comercio` : estado;
+  const { icono, titulo, texto } = CONTENIDO[clave] || CONTENIDO.pendiente;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", background: "#0a0a0a" }}>
