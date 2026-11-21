@@ -18,6 +18,10 @@ export function puedeManejarPago(esDueno, atleta) {
 // Cuántos meses por adelantado se puede cobrar una cuota (además del actual)
 export const MESES_ADELANTO = 3;
 
+// Cuántos meses vencidos (impagos) se muestran para cobrar en la ficha del
+// atleta. Los más viejos se cobran desde la tab Pagos (navega sin límite).
+export const MESES_ATRASO = 3;
+
 // Mueve un período { mes: 1-12, anio } n meses (negativo = hacia atrás).
 // Maneja el cambio de año: diciembre + 1 = enero del año siguiente.
 export function moverPeriodo({ mes, anio }, n) {

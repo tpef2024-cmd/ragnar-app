@@ -2,6 +2,7 @@
 // Carga y guarda atletas, pagos, planes de cuota y grupos para el panel de coach.
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { MESES_ATRASO, moverPeriodo } from "../lib/helpers";
 
 // Mes y año actuales ({ mes: 1-12, anio }) según el reloj del dispositivo
 const periodoActual = () => {
@@ -283,18 +284,18 @@ export function useCoachData(usuario, activo) {
   // Detalle del pago del mes actual de un atleta (para el detalle del atleta)
   const pagoDelMes = (atletaId) => pagos.find((p) => p.athlete_id === atletaId);
 
-  // Pagos de un atleta desde el mes actual en adelante (mes actual + los que
-  // haya pagado por adelantado). Lo usa el detalle del atleta para mostrar y
-  // cobrar cuotas de los próximos meses.
+  // Pagos de un atleta desde MESES_ATRASO meses antes del actual en adelante
+  // (vencidos recientes + mes actual + adelantados). Lo usa el detalle del
+  // atleta para mostrar y cobrar esas cuotas.
   const cargarPagosAtleta = useCallback(async (atletaId) => {
-    const { mes, anio } = periodoActual();
-    const desde = anio * 12 + mes;
+    const desdePer = moverPeriodo(periodoActual(), -MESES_ATRASO);
+    const desde = desdePer.anio * 12 + desdePer.mes;
     const { data } = await supabase
       .from("payments")
       .select("athlete_id, status, amount, plan_id, payment_method, period_month, period_year")
       .eq("athlete_id", atletaId)
       .eq("status", "paid")
-      .gte("period_year", anio);
+      .gte("period_year", desdePer.anio);
     return (data || []).filter((p) => p.period_year * 12 + p.period_month >= desde);
   }, []);
 
