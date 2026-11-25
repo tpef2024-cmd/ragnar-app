@@ -18,6 +18,8 @@ export default function AppShell({
   onSalir,
   children,
   badges = {}, // { [tabKey]: numero } — muestra un contador rojo al lado del label
+  // Tabs visibles pero grises y no seleccionables: { [tabKey]: "motivo (tooltip)" }
+  tabsDeshabilitadas = {},
   vistaAlternativa = null, // texto del botón para cambiar coach ⇄ atleta (solo coaches)
   onCambiarVista,
 }) {
@@ -84,6 +86,8 @@ export default function AppShell({
               key={key}
               className={`sidebar-tab ${tabActivo === key ? "on" : ""}`}
               onClick={() => onCambiarTab(key)}
+              disabled={!!tabsDeshabilitadas[key]}
+              title={tabsDeshabilitadas[key] || undefined}
             >
               {label}
               {!!badges[key] && (
@@ -168,6 +172,8 @@ export default function AppShell({
                 key={key}
                 className={`tab ${tabActivo === key ? "on" : ""}`}
                 onClick={() => onCambiarTab(key)}
+                disabled={!!tabsDeshabilitadas[key]}
+                title={tabsDeshabilitadas[key] || undefined}
               >
                 {label}
                 {!!badges[key] && (

@@ -7,6 +7,7 @@ import { useTiendaCoach } from "./hooks/useTienda";
 import { usePromocionCoach } from "./hooks/usePromocion";
 import { useHybridData } from "./hooks/useHybridData";
 import { useRagnerosAdmin } from "./hooks/useRagnerosAdmin";
+import { usePlanificacionAtleta } from "./hooks/usePlanificacion";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { globalStyles } from "./styles/globalStyles";
 import { Y } from "./lib/constants";
@@ -18,6 +19,7 @@ import AppShell from "./components/layout/AppShell";
 import AthletePanel from "./screens/athlete/AthletePanel";
 import CoachPanel from "./screens/coach/CoachPanel";
 import AthleteBeneficios from "./screens/athlete/AthleteBeneficios";
+import AthletePlanificacion from "./screens/athlete/AthletePlanificacion";
 import MerchantPanel from "./screens/merchant/MerchantPanel";
 import { TABS_COMERCIO, esTabComercio } from "./screens/merchant/tabsComercio";
 import TarjetaLogro from "./components/shared/TarjetaLogro";
@@ -30,6 +32,7 @@ const TABS_ATLETA = [
   ["fortime", "⏱ For Time"],
   ["reps", "🔥 Reps"],
   ["hibrido", "🔁 Híbrido"],
+  ["planificacion", "📄 Planificación"],
   ["logros", "🏆 Logros"],
   ["beneficios", "🎟 Beneficios"],
   ["perfil", "👤 Perfil"],
@@ -99,6 +102,9 @@ export default function App() {
   // ── DATOS ─────────────────────────────────────────────────────────────────
   const athleteDataRaw = useAthleteData(usuario, modo === "athlete");
   const attendanceData = useAttendance(usuario, modo === "athlete");
+  // Planificación: la tab se ve siempre, pero queda gris salvo que un profe
+  // la haya habilitado hasta una fecha que todavía no pasó
+  const planificacion = usePlanificacionAtleta(usuario, modo === "athlete");
   // Dueño = coach con is_owner. Los profes no cargan tienda ni promos.
   const esDueno = pantalla === "coach" && !!perfil?.is_owner;
   const coachData = useCoachData(usuario, pantalla === "coach");
@@ -299,6 +305,11 @@ export default function App() {
                 : tabCoach
         }
         onCambiarTab={modo === "merchant" ? setTabComercio : modo === "athlete" ? setTabAtleta : setTabCoach}
+        tabsDeshabilitadas={
+          modo === "athlete" && !planificacion.habilitado
+            ? { planificacion: "Tu profe la habilita si vas a estar de vacaciones o no podés venir" }
+            : {}
+        }
         onLogoClick={handleLogoClick}
         onSalir={logout}
         vistaAlternativa={
@@ -332,6 +343,10 @@ export default function App() {
             guardando={guardando}
             onGuardarPerfil={actualizarPerfil}
           />
+        )}
+
+        {modo === "athlete" && tabAtleta === "planificacion" && (
+          <AthletePlanificacion planificacion={planificacion} />
         )}
 
         {modo === "athlete" && tabAtleta === "beneficios" && (

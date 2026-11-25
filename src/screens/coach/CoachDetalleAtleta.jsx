@@ -11,6 +11,7 @@ import {
   movimientosDeDisciplina,
   etiquetaGrupo,
   MESES_ADELANTO,
+  MESES_ATRASO,
   moverPeriodo,
 } from "../../lib/helpers";
 import SelectorGrupo from "../../components/shared/SelectorGrupo";
@@ -18,6 +19,7 @@ import SeccionNotas from "../../components/shared/SeccionNotas";
 import { useNotas } from "../../hooks/useNotas";
 import CobrarCuota from "./CobrarCuota";
 import AsistenciaAtleta from "./AsistenciaAtleta";
+import PlanificacionAtleta from "./PlanificacionAtleta";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -92,21 +94,35 @@ export default function CoachDetalleAtleta({
   const [cobrando, setCobrando] = useState(false);
   const notas = useNotas(atleta.id);
 
-  // ── CUOTAS: mes actual + hasta MESES_ADELANTO meses por adelantado ────────
+  // ── CUOTAS: vencidas impagas (hasta MESES_ATRASO) + mes actual + hasta
+  // MESES_ADELANTO meses por adelantado ──────────────────────────────────────
   // Cada pago queda imputado al mes que cubre (y suma a los ingresos de ese
-  // mes), no al mes en que se cobró.
+  // mes), no al mes en que se cobró. `mesCuota` es el desfasaje respecto del
+  // mes actual: negativo = vencido, 0 = actual, positivo = adelantado.
   const hoy = new Date();
   const periodoActual = { mes: hoy.getMonth() + 1, anio: hoy.getFullYear() };
-  const periodosCuota = Array.from({ length: MESES_ADELANTO + 1 }, (_, i) =>
-    moverPeriodo(periodoActual, i),
-  );
-  const [mesCuota, setMesCuota] = useState(0); // 0 = mes actual, 1..3 = adelantado
+  const [mesCuota, setMesCuota] = useState(0);
   const [pagosAtleta, setPagosAtleta] = useState([]);
+  const [pagosCargados, setPagosCargados] = useState(false);
   const [errorCobro, setErrorCobro] = useState("");
-  const periodoSel = periodosCuota[mesCuota];
   const pagoDe = (per) =>
     pagosAtleta.find((p) => p.period_month === per.mes && p.period_year === per.anio);
+
+  // Un mes vencido se ofrece solo si no está pagado y el atleta ya estaba
+  // registrado ese mes (a un alta de este mes no se le cobran meses previos).
+  // El vencido elegido queda visible aunque se acabe de pagar, para ver el ✓.
+  const alta = atleta.created_at ? new Date(atleta.created_at) : null;
+  const altaIdx = alta ? alta.getFullYear() * 12 + alta.getMonth() + 1 : -Infinity;
+  const vencidos = pagosCargados
+    ? Array.from({ length: MESES_ATRASO }, (_, i) => i - MESES_ATRASO).filter((d) => {
+        const per = moverPeriodo(periodoActual, d);
+        return per.anio * 12 + per.mes >= altaIdx && (!pagoDe(per) || d === mesCuota);
+      })
+    : [];
+  const desfasajes = [...vencidos, ...Array.from({ length: MESES_ADELANTO + 1 }, (_, i) => i)];
+  const periodoSel = moverPeriodo(periodoActual, mesCuota);
   const pago = pagoDe(periodoSel);
+  const etiquetaMes = (d) => (d < 0 ? "vencido" : d === 0 ? "mes actual" : "adelantado");
   const nombrePlan = (planId) => planes.find((p) => p.id === planId)?.name;
   const nombreMes = (per) =>
     `${MESES[per.mes - 1]}${per.anio !== periodoActual.anio ? ` ${per.anio}` : ""}`;
@@ -119,7 +135,10 @@ export default function CoachDetalleAtleta({
     let activo = true;
     if (puedeVerPago && cargarPagosAtleta) {
       cargarPagosAtleta(atleta.id).then((data) => {
-        if (activo) setPagosAtleta(data);
+        if (activo) {
+          setPagosAtleta(data);
+          setPagosCargados(true);
+        }
       });
     }
     return () => {
@@ -276,40 +295,44 @@ export default function CoachDetalleAtleta({
         )}
       </div>
 
-      {/* Cuotas: mes actual + adelantadas */}
+      {/* Cuotas: vencidas impagas + mes actual + adelantadas */}
       {puedeVerPago && (
         <div
           className="card"
-          style={{ marginBottom: 16, borderColor: pago || mesCuota > 0 ? undefined : "#7f1d1d" }}
+          style={{
+            marginBottom: 16,
+            borderColor: pago || mesCuota > 0 ? undefined : "#7f1d1d",
+          }}
         >
           <div style={estiloTitulo}>Cuotas</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-            {periodosCuota.map((per, i) => {
+            {desfasajes.map((d) => {
+              const per = moverPeriodo(periodoActual, d);
               const pagado = !!pagoDe(per);
               return (
                 <button
                   key={`${per.anio}-${per.mes}`}
-                  className={`chip-disc ${mesCuota === i ? "on" : ""}`}
-                  onClick={() => elegirMesCuota(i)}
-                  title={i === 0 ? "Mes actual" : "Pago por adelantado"}
+                  className={`chip-disc ${mesCuota === d ? "on" : ""}`}
+                  onClick={() => elegirMesCuota(d)}
+                  title={d < 0 ? "Cuota vencida sin pagar" : d === 0 ? "Mes actual" : "Pago por adelantado"}
+                  style={d < 0 && !pagado && mesCuota !== d ? { borderColor: "#7f1d1d", color: "#f87171" } : undefined}
                 >
                   {nombreMes(per).slice(0, 3)}
                   {per.anio !== periodoActual.anio ? ` ${String(per.anio).slice(2)}` : ""}{" "}
-                  <span style={{ color: pagado ? "#4ade80" : i === 0 ? "#f87171" : "#555" }}>
-                    {pagado ? "✓" : "·"}
+                  <span style={{ color: pagado ? "#4ade80" : d <= 0 ? "#f87171" : "#555" }}>
+                    {pagado ? "✓" : d < 0 ? "!" : "·"}
                   </span>
                 </button>
               );
             })}
           </div>
-          <div style={{ fontSize: 9, letterSpacing: 2, color: "#7a7a7a", textTransform: "uppercase", marginBottom: 8 }}>
-            {nombreMes(periodoSel)}
-            {mesCuota > 0 ? " · adelantado" : " · mes actual"}
+          <div style={{ fontSize: 9, letterSpacing: 2, color: mesCuota < 0 && !pago ? "#f87171" : "#7a7a7a", textTransform: "uppercase", marginBottom: 8 }}>
+            {nombreMes(periodoSel)} · {etiquetaMes(mesCuota)}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             {pago ? (
               <div style={{ fontSize: 10, letterSpacing: 1, color: "#4ade80" }}>
-                {mesCuota > 0 ? "✓ Pagado" : "✓ Al día"} — {pago.plan_id ? nombrePlan(pago.plan_id) : "monto libre"} · $
+                {mesCuota === 0 ? "✓ Al día" : "✓ Pagado"} — {pago.plan_id ? nombrePlan(pago.plan_id) : "monto libre"} · $
                 {Number(pago.amount || 0).toLocaleString("es-AR")}
                 {pago.payment_method && (
                   <span style={{ color: "#7a7a7a" }}>
@@ -319,7 +342,7 @@ export default function CoachDetalleAtleta({
               </div>
             ) : (
               <div style={{ fontSize: 10, letterSpacing: 1, color: mesCuota > 0 ? "#7a7a7a" : "#f87171" }}>
-                {mesCuota > 0 ? "Sin pagar todavía" : "Cuota pendiente"}
+                {mesCuota > 0 ? "Sin pagar todavía" : mesCuota < 0 ? "Cuota vencida — no pagó" : "Cuota pendiente"}
               </div>
             )}
             {pago ? (
@@ -368,13 +391,16 @@ export default function CoachDetalleAtleta({
             <CobrarCuota
               key={`${periodoSel.anio}-${periodoSel.mes}`}
               planes={planes}
-              periodoTexto={`${nombreMes(periodoSel)}${mesCuota > 0 ? " (adelantado)" : ""}`}
+              periodoTexto={`${nombreMes(periodoSel)}${mesCuota !== 0 ? ` (${etiquetaMes(mesCuota)})` : ""}`}
               onConfirmar={handleCobrar}
               onCancelar={() => setCobrando(false)}
             />
           )}
         </div>
       )}
+
+      {/* Planificación (PDFs para cuando no puede venir) */}
+      <PlanificacionAtleta atleta={atleta} usuarioId={usuarioId} />
 
       {/* Datos personales */}
       <div className="card" style={{ marginBottom: 16 }}>

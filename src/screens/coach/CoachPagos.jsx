@@ -90,7 +90,9 @@ export default function CoachPagos({
         ? "Mes próximo · adelantado"
         : diferencia > 1
           ? `En ${diferencia} meses · adelantado`
-          : "Mes anterior";
+          : diferencia === -1
+            ? "Mes anterior · vencido"
+            : `Hace ${-diferencia} meses · vencido`;
   const textoSinPago = diferencia < 0 ? "No pagó" : "Cuota pendiente";
 
   return (
@@ -339,7 +341,7 @@ export default function CoachPagos({
               {cobrandoA === a.id && (
                 <CobrarCuota
                   planes={planes}
-                  periodoTexto={`${MESES[periodo.mes - 1]} ${periodo.anio}${diferencia > 0 ? " (adelantado)" : ""}`}
+                  periodoTexto={`${MESES[periodo.mes - 1]} ${periodo.anio}${diferencia > 0 ? " (adelantado)" : diferencia < 0 ? " (vencido)" : ""}`}
                   onConfirmar={(datos) => handleConfirmarCobro(a.id, datos)}
                   onCancelar={() => setCobrandoA(null)}
                 />

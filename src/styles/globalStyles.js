@@ -92,6 +92,8 @@ export const globalStyles = `
     letter-spacing:2px;cursor:pointer;transition:all .2s}
   .tab.on{color:${Y};border-bottom-color:${Y}}
   .tab:hover{color:#fff}
+  .tab:disabled,.sidebar-tab:disabled{opacity:.35;cursor:not-allowed}
+  .tab:disabled:hover,.sidebar-tab:disabled:hover{color:inherit;background:transparent}
 
   .card{background:${CARD};border:1px solid ${BORDER};border-radius:2px;padding:18px}
   .mov{padding:7px 12px;background:#151515;border:1px solid #2a2a2a;color:#b3b3b3;
