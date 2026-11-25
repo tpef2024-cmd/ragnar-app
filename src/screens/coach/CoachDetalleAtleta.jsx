@@ -19,6 +19,7 @@ import SeccionNotas from "../../components/shared/SeccionNotas";
 import { useNotas } from "../../hooks/useNotas";
 import CobrarCuota from "./CobrarCuota";
 import AsistenciaAtleta from "./AsistenciaAtleta";
+import PlanificacionAtleta from "./PlanificacionAtleta";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -397,6 +398,9 @@ export default function CoachDetalleAtleta({
           )}
         </div>
       )}
+
+      {/* Planificación (PDFs para cuando no puede venir) */}
+      <PlanificacionAtleta atleta={atleta} usuarioId={usuarioId} />
 
       {/* Datos personales */}
       <div className="card" style={{ marginBottom: 16 }}>
